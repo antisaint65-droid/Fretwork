@@ -1,0 +1,42 @@
+name: Fetch fonts
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/fonts.yml"]
+permissions:
+  contents: write
+jobs:
+  fonts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download free (OFL) fonts from google/fonts
+        run: |
+          mkdir -p fonts
+          base=https://raw.githubusercontent.com/google/fonts/main/ofl
+          get(){ curl -fsSL "$base/$1" -o "fonts/$2" && echo "ok $2" || echo "missing $1"; }
+          get "sixcaps/SixCaps-Regular.ttf" SixCaps.ttf || true
+          [ -s fonts/SixCaps.ttf ] || get "sixcaps/SixCaps.ttf" SixCaps.ttf
+          get "leaguegothic/LeagueGothic%5Bwdth%5D.ttf" LeagueGothic.ttf
+          get "antonio/Antonio%5Bwght%5D.ttf" Antonio.ttf
+          get "sofiasans/SofiaSans%5Bwght%5D.ttf" SofiaSans.ttf
+          get "sofiasansextracondensed/SofiaSansExtraCondensed%5Bwght%5D.ttf" SofiaSansExtraCondensed.ttf
+          get "saira/Saira%5Bwdth%2Cwght%5D.ttf" Saira.ttf
+          get "archivo/Archivo%5Bwdth%2Cwght%5D.ttf" Archivo.ttf
+          get "atkinsonhyperlegible/AtkinsonHyperlegible-Regular.ttf" AtkinsonHyperlegible-Regular.ttf
+          get "atkinsonhyperlegible/AtkinsonHyperlegible-Bold.ttf" AtkinsonHyperlegible-Bold.ttf
+          get "atkinsonhyperlegiblenext/AtkinsonHyperlegibleNext%5Bwght%5D.ttf" AtkinsonHyperlegibleNext.ttf
+          get "lexend/Lexend%5Bwght%5D.ttf" Lexend.ttf
+          get "sixcaps/OFL.txt" OFL-SixCaps.txt
+          get "sofiasans/OFL.txt" OFL-SofiaSans.txt
+          get "atkinsonhyperlegible/OFL.txt" OFL-AtkinsonHyperlegible.txt
+          find fonts -size 0 -delete
+          ls -la fonts
+      - name: Save them in the repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fonts
+          git commit -m "Add free fonts (SIL Open Font License)" || echo "nothing to commit"
+          git push
