@@ -365,6 +365,9 @@ body.hw-full .nav{opacity:0;pointer-events:none}
 .hb.big{width:52px;height:52px}
 label.hb{cursor:pointer}
 @media (orientation:portrait){.hwtop{top:auto;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:0!important;right:0!important;display:flex!important;justify-content:center;flex-wrap:wrap;direction:ltr}}
+.mssec{display:grid;gap:8px}.mssec.empty .slist{display:none}
+.mshead{display:flex;justify-content:space-between;align-items:baseline;padding:4px 2px 0;border-top:1px solid var(--line)}
+.npimg{width:52px;height:52px;border-radius:10px;object-fit:cover}
 </style>
 </head>
 <body>
@@ -383,11 +386,25 @@ label.hb{cursor:pointer}
 <section class="view wrap" id="v-songs" hidden>
   <h1 class="title">Songs</h1>
   <button class="jamcard" data-open="s-build"><div class="av"><svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/><path d="M14 8l4-1"/></svg></div><div><b style="font-size:18px">Song Builder</b><div class="small muted">Pick a mood, play or tap ideas, and Fretwork maps them on the neck and saves your song.</div></div><span class="muted">›</span></button>
+  <div class="card pad" id="npCard">
+     <div class="row" style="justify-content:space-between"><h2 class="h2">Listening now</h2><span class="small muted" id="npSrc"></span></div>
+     <div id="npBody" class="slist"></div>
+     <div class="slist" id="npRecent"></div>
+     <div id="spRow">
+       <details id="spSetup"><summary class="small muted" style="cursor:pointer">Set up Spotify (one time, needs Spotify Premium)</summary>
+         <ol class="small muted" style="padding-left:18px;margin:8px 0">
+           <li>On <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com</a>, sign in and tap <b>Create app</b>. Name it Fretwork.</li>
+           <li>Under Redirect URI, add exactly: <span class="mono" id="spRedir" style="word-break:break-all"></span></li>
+           <li>Tick <b>Web API</b>, save, then copy the <b>Client ID</b> and paste it here.</li></ol>
+         <input class="field" id="spClient" placeholder="Spotify Client ID" autocapitalize="off" autocomplete="off" spellcheck="false"></details>
+       <div class="row" style="margin-top:8px"><button class="btn small ghost" id="spConnect">Connect Spotify</button></div>
+     </div>
+   </div>
   <div><div class="eyebrow" style="margin-bottom:10px">Tabs</div><div class="slist" id="tabList"></div></div>
   <div><div class="eyebrow" style="margin-bottom:10px">Chord play-along</div><div class="slist" id="progList"></div></div>
   <div class="card pad" id="importSec">
     <h2 class="h2">Add a song</h2>
-    <label class="small muted" for="gpArtist">Search GProTab for free Guitar Pro files. Tap Get and the song goes straight into Fretwork.</label>
+    <label class="small muted" for="gpArtist">Searches GProTab, GtpTabs and GuitarProTabs.org for free Guitar Pro files all at once. Tap Get and the song goes straight into Fretwork.</label>
     <div class="row" style="flex-wrap:nowrap"><input class="field" id="gpArtist" placeholder="Artist" autocapitalize="words" enterkeyhint="search"><input class="field" id="gpSong" placeholder="Song (optional)" autocapitalize="words" enterkeyhint="search"></div>
     <div class="row"><button class="btn" id="gpSearchBtn">Search</button><a class="btn ghost small" id="gpOpen" href="https://gprotab.net/" target="_blank" rel="noopener">Open GProTab</a></div>
     <div class="slist" id="gpResults"></div>
@@ -1463,7 +1480,7 @@ function wireBoard(el){el.addEventListener("click",e=>{const g=e.target.closest(
 
 /* ================= navigation ================= */
 const VIEWS=["learn","songs","tools","profile"];let curView="learn";const stack=[];
-function show(v){curView=v;VIEWS.forEach(n=>{$("v-"+n).hidden=n!==v;});
+function show(v){curView=v;if(v==="songs"&&window.npPollSoon)setTimeout(window.npPollSoon,50);VIEWS.forEach(n=>{$("v-"+n).hidden=n!==v;});
   document.querySelectorAll(".nav button").forEach(b=>{if(b.dataset.v===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");});
   if(v!=="tools")stopTone();if(v==="profile")renderStats();window.scrollTo(0,0);}
 document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>{closeAllScreens();show(b.dataset.v);}));
@@ -1568,7 +1585,8 @@ window.__fwNative=(id,ok,data)=>{const w=nativeWait[id];if(!w)return;delete nati
 function nativeFetch(url,binary){return new Promise((res,rej)=>{const id="n"+(++nativeSeq);nativeWait[id]={res:b64=>{const bin=atob(b64);const u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);res(binary?u8:new TextDecoder().decode(u8));},rej};
   try{NATIVE.fetch(id,url);}catch(e){delete nativeWait[id];rej(e);}setTimeout(()=>{if(nativeWait[id]){delete nativeWait[id];rej(new Error("timeout"));}},20000);});}
 async function fetchAnyNative(url,binary,ok,limit){if(NATIVE){try{const out=await nativeFetch(url,binary);if(ok(out))return out;}catch(e){}}return fetchRelays(url,binary,ok,limit);}
-function fetchRelays(url,binary,ok,limit){const outer=new AbortController();const subs=[];
+async function fetchRelays(url,binary,ok,limit){const pref=ROUTES.find(r=>r.n===S.relay&&(!binary||r.bin));if(pref){const c=new AbortController();const tm=setTimeout(()=>c.abort(),7000);try{const res=await fetch(pref.u(url),{signal:c.signal,cache:"no-store",headers:pref.h||{}});if(res.ok){const out=binary?new Uint8Array(await res.arrayBuffer()):await res.text();if(ok(out)){clearTimeout(tm);return out;}}}catch(e){}clearTimeout(tm);}return fetchRace(url,binary,ok,limit);}
+function fetchRace(url,binary,ok,limit){const outer=new AbortController();const subs=[];
   const routes=ROUTES.filter(r=>!binary||r.bin);
   const tries=routes.map(r=>{const c=new AbortController();subs.push(c);
     return fetch(r.u(url),{signal:c.signal,cache:"no-store",headers:r.h||{}}).then(async res=>{if(!res.ok)throw new Error("HTTP "+res.status);
@@ -1637,8 +1655,8 @@ async function gpSearch(){const ar=$("gpArtist").value.trim(),so=$("gpSong").val
       if(list){showSongs(list);return;}gpIdle();gpLoadArtist(box,aSlug,ar,so);return;}
     gpIdle();showArtists(artists);}
   finally{if(run===gpRun){$("gpSearchBtn").disabled=false;}}}
-$("gpSearchBtn").addEventListener("click",gpSearch);
-[$("gpArtist"),$("gpSong")].forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();gpSearch();}}));
+$("gpSearchBtn").addEventListener("click",()=>fwSearch());
+[$("gpArtist"),$("gpSong")].forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();fwSearch();}}));
 const gpFileOk=u8=>u8&&u8.length>64&&(looksGp(u8,"x")||(u8[0]===0x50&&u8[1]===0x4b));
 async function gpGetSong(aSlug,sSlug,name,artistName,btn){const msg=$("impMsg");msg.classList.remove("good");const page="https://gprotab.net/en/tabs/"+aSlug+"/"+sSlug;
   if(btn){btn.disabled=true;btn.textContent="Getting…";}msg.textContent="Downloading "+name+"…";
@@ -1651,6 +1669,73 @@ function gpDownloadUrl(raw){const hit=/https?:\/\/(?:www\.)?gprotab\.net\/\S+/i.
   const m=/^\/[a-z]{2}\/tabs\/([^\/]+)\/([^\/?#]+)/.exec(u.pathname);if(!m)return null;return {artist:m[1],song:m[2]};}
 $("gpGet").addEventListener("click",()=>{const info=gpDownloadUrl($("gpLink").value);if(!info){$("impMsg").textContent="Paste the link of a song page on gprotab.net. It looks like gprotab.net/en/tabs/artist/song.";return;}
   gpGetSong(info.artist,info.song,info.song.replace(/-/g," "),info.artist.replace(/-/g," "),$("gpGet"));$("gpLink").value="";});
+/* ---------- search every free Guitar Pro site at once ---------- */
+const anyHtml=t=>typeof t==="string"&&t.length>400&&/<a\s|\]\(http/i.test(t);
+const gpoSlug=s=>String(s||"").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g,"").replace(/&/g,"and").replace(/['’]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+const gtLetter=s=>{const c=(s||"").charAt(0);return /[a-z]/.test(c)?c.charCodeAt(0)-96:27;};
+/* names to try for an artist: as typed, without "The", and surname-first for people */
+function artistVariants(ar){const w=words(ar);const out=[w.join("-")];if(w[0]==="the"&&w.length>1)out.push(w.slice(1).join("-"));if(w.length===2)out.push([w[1],w[0]].join("-"));return [...new Set(out)].filter(Boolean);}
+const linksIn=(html,re)=>{const out=[];const seen=new Set();let m;while((m=re.exec(html))){const key=m[1];if(seen.has(key))continue;seen.add(key);out.push(m);}return out;};
+const strip=s=>decodeHtml(String(s||"").replace(/<[^>]+>/g,""));
+async function fetchFile(url){return fetchAnyNative(url,true,gpFileOk,25000);}
+const SOURCES=[
+  {id:"gpt",name:"GProTab",site:"https://gprotab.net/",
+   async find(ar,so){const tryArtist=async a=>{try{const h=await gpPage("https://gprotab.net/en/tabs/"+a);return parseSongs(h,a);}catch(e){return [];}};
+     let list=[],aName=ar;for(const v of artistVariants(ar)){list=await tryArtist(v);if(list.length)break;}
+     if(!list.length){const a0=slug(ar);const letter=/^[a-z]/.test(a0)?a0[0]:"09";const idx=await gpPage("https://gprotab.net/en/artists/"+letter);const best=parseArtists(idx).map(a=>({...a,sc:artistScore(ar,a)})).filter(a=>a.sc>=50).sort((x,y)=>y.sc-x.sc)[0];
+       if(best){aName=best.name;list=await tryArtist(best.slug);}}
+     return list.map(s=>({title:s.name,artist:aName,page:"https://gprotab.net/en/tabs/"+s.artist+"/"+s.song,get:async()=>{try{return await fetchFile("https://gprotab.net/en/tabs/"+s.artist+"/"+s.song+"?download");}catch(e){return fetchFile("https://gprotab.net/en/tabs/"+s.artist+"/"+s.song+"?read");}}}));}},
+  {id:"gtp",name:"GtpTabs",site:"https://gtptabs.com/",
+   async find(ar,so){const page=async a=>{const L=gtLetter(a);try{const h=await fetchAnyNative("https://gtptabs.com/tabs/"+L+"/"+a+".html",false,anyHtml,20000);
+         const re=new RegExp('href="(?:https?://gtptabs\\.com)?(/tabs/'+L+'/'+reEsc(a)+'/[^"#?]+\\.html)"[^>]*>([\\s\\S]*?)</a>',"g");return linksIn(h,re).map(m=>({path:m[1],title:strip(m[2])})).filter(x=>x.title);}catch(e){return [];}};
+     let songs=[],aName=ar;for(const v of artistVariants(ar)){songs=await page(v);if(songs.length)break;}
+     if(!songs.length){const firsts=[...new Set(artistVariants(ar).map(v=>v[0]))];for(const c of firsts){const L=gtLetter(c);let idx;try{idx=await fetchAnyNative("https://gtptabs.com/tabs/"+L+"/",false,anyHtml,20000);}catch(e){continue;}
+         const arts=linksIn(idx,new RegExp('href="(?:https?://gtptabs\\.com)?/tabs/'+L+'/([a-z0-9-]+)\\.html"[^>]*>([\\s\\S]*?)</a>',"g")).map(m=>({slug:m[1],name:strip(m[2])}));
+         const best=arts.map(a=>({...a,sc:Math.max(artistScore(ar,a),artistScore(ar,{name:a.name.split(/\s+/).reverse().join(" "),slug:a.slug}))})).filter(a=>a.sc>=50).sort((x,y)=>y.sc-x.sc)[0];
+         if(best){aName=best.name;songs=await page(best.slug);if(songs.length)break;}}}
+     return songs.map(s=>({title:s.title,artist:aName,page:"https://gtptabs.com"+s.path,get:async()=>{const h=await fetchAnyNative("https://gtptabs.com"+s.path,false,anyHtml,20000);const m=/\/tabs\/download\/(\d+)\.html/.exec(h);if(!m)throw new Error("no file link");return fetchFile("https://gtptabs.com/tabs/download/"+m[1]+".html");}}));}},
+  {id:"gpo",name:"GuitarProTabs.org",site:"https://guitarprotabs.org/",
+   async find(ar,so){const pages=async a=>{const L=/[a-z]/.test(a[0])?a[0]:"0";const base="https://guitarprotabs.org/"+L+"/"+a+"/";let first;try{first=await fetchAnyNative(base+"1/",false,anyHtml,20000);}catch(e){return [];}
+         const re=()=>new RegExp('href="(?:https?://guitarprotabs\\.org)?(/'+L+'/'+reEsc(a)+'/([^"/]+)_(\\d+)/)"[^>]*>([\\s\\S]*?)</a>',"g");let max=1;let m;const pr=new RegExp('/'+L+'/'+reEsc(a)+'/(\\d+)/',"g");while((m=pr.exec(first)))max=Math.max(max,+m[1]);max=Math.min(max,25);
+         const rest=await Promise.all(Array.from({length:max-1},(_,i)=>fetchAnyNative(base+(i+2)+"/",false,anyHtml,20000).catch(()=>"")));
+         const out=[];const seen=new Set();[first,...rest].forEach(h=>{linksIn(h,re()).forEach(x=>{if(seen.has(x[1]))return;seen.add(x[1]);const t=strip(x[4]);if(t)out.push({path:x[1],title:t});});});return out;};
+     let songs=[],aName=ar;for(const v of artistVariants(ar).map(v=>v.replace(/-/g,"_"))){songs=await pages(v);if(songs.length)break;}
+     if(!songs.length){const a0=gpoSlug(ar);const L=/[a-z]/.test(a0[0])?a0[0]:"0";const idx=await Promise.all(Array.from({length:12},(_,i)=>fetchAnyNative("https://guitarprotabs.org/"+L+"/"+(i+1)+"/",false,anyHtml,20000).catch(()=>"")));
+       const arts=[];idx.forEach(h=>linksIn(h,new RegExp('href="(?:https?://guitarprotabs\\.org)?/'+L+'/([a-z0-9_]+)/1/"[^>]*>([\\s\\S]*?)</a>',"g")).forEach(m=>arts.push({slug:m[1],name:strip(m[2])})));
+       const best=arts.map(a=>({...a,sc:artistScore(ar,{name:a.name,slug:a.slug.replace(/_/g,"-")})})).filter(a=>a.sc>=50).sort((x,y)=>y.sc-x.sc)[0];if(best){aName=best.name;songs=await pages(best.slug);}}
+     return songs.map(s=>({title:s.title,artist:aName,page:"https://guitarprotabs.org"+s.path,get:()=>fetchFile("https://guitarprotabs.org"+s.path+"download/")}));}}];
+/* some sites hand out zip files: pull the Guitar Pro file out of them */
+async function unzipGp(u8){let p=0;const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
+  while(p+30<u8.length&&dv.getUint32(p,true)===0x04034b50){const method=dv.getUint16(p+8,true),csize=dv.getUint32(p+18,true),nlen=dv.getUint16(p+26,true),xlen=dv.getUint16(p+28,true);
+    const name=new TextDecoder().decode(u8.subarray(p+30,p+30+nlen));const start=p+30+nlen+xlen;const data=u8.subarray(start,start+csize);
+    if(/\.(gp|gp3|gp4|gp5|gpx|gtp)$/i.test(name))return {name,u8:method===0?data:await inflateRaw(data)};p=start+csize;}
+  return null;}
+let msRun=0;
+function msRow(r,src){const row=gpRow(r.title,(r.artist||"")+" · "+src.name,"Get",async b=>{const msg=$("impMsg");msg.classList.remove("good");b.disabled=true;b.textContent="Getting…";msg.textContent="Downloading "+r.title+" from "+src.name+"…";
+    try{let u8=await r.get();if(u8[0]===0x50&&u8[1]===0x4b){let isGp7=false;try{await GP.parseSong(u8,inflateRaw);isGp7=true;}catch(e){}if(!isGp7){const z=await unzipGp(u8);if(!z)throw new Error("That download had no Guitar Pro file in it.");u8=z.u8;}}
+      await importGp(u8,r.title+" - "+(r.artist||""));b.textContent="Added ✓";}
+    catch(e){b.disabled=false;b.textContent="Get";msg.textContent=(e&&/Guitar Pro|supported|damaged|ended early|no Guitar Pro/.test(e.message)?e.message:"Couldn't download it from "+src.name+". Try another result, or open it in your browser.");
+      const a=document.createElement("a");a.className="btn ghost small";a.href=r.page;a.target="_blank";a.rel="noopener";a.textContent="Open on "+src.name;msg.appendChild(document.createElement("br"));msg.appendChild(a);}});return row;}
+async function fwSearch(){const ar=$("gpArtist").value.trim(),so=$("gpSong").value.trim();const box=$("gpResults");
+  if(!ar){box.innerHTML='<div class="small muted">Type an artist name first.</div>';$("gpArtist").focus();return;}
+  gpAbort();const run=++msRun;box.innerHTML="";const t0=Date.now();
+  const head=document.createElement("div");head.className="small muted";box.appendChild(head);
+  const secs=SOURCES.map(src=>{const s=document.createElement("div");s.className="mssec";s.innerHTML='<div class="mshead"><b>'+esc(src.name)+'</b><span class="muted small">Searching…</span></div><div class="slist"></div>';box.appendChild(s);return {src,el:s,n:0,done:false};});
+  const links=document.createElement("div");links.className="small muted";const q=encodeURIComponent((ar+" "+so).trim());
+  links.innerHTML='Not there? Look on <a target="_blank" rel="noopener" href="https://www.ultimate-guitar.com/search.php?search_type=title&value='+q+'&type=500">Ultimate Guitar</a> (free account needed for Guitar Pro files), <a target="_blank" rel="noopener" href="https://www.songsterr.com/?pattern='+q+'">Songsterr</a> or <a target="_blank" rel="noopener" href="https://www.911tabs.com/search.php?search='+q+'&type=guitar_pro">911tabs</a>, then share the file to Fretwork.';
+  box.appendChild(links);
+  const tick=setInterval(()=>{if(run!==msRun){clearInterval(tick);return;}const left=secs.filter(s=>!s.done).length;head.textContent=left?"Searching "+SOURCES.length+" sites… "+Math.round((Date.now()-t0)/1000)+"s":"";},500);
+  $("gpSearchBtn").disabled=true;
+  await Promise.all(secs.map(async S0=>{let list=[];let err=false;try{list=await S0.src.find(ar,so);}catch(e){err=true;}if(run!==msRun)return;
+    if(so)list=songFilter(list.map(r=>Object.assign(r,{name:r.title,song:r.title})),so);S0.done=true;S0.n=list.length;
+    const st=S0.el.querySelector(".mshead span"),ul=S0.el.querySelector(".slist");
+    st.textContent=err?"Couldn't reach it":list.length?list.length+" found":"Not found";if(!list.length)S0.el.classList.add("empty");
+    list.slice(0,so?12:40).forEach(r=>ul.appendChild(msRow(r,S0.src)));}));
+  if(run!==msRun)return;clearInterval(tick);$("gpSearchBtn").disabled=false;
+  /* best matches first: sites with exact title hits move up */
+  const sq=squash(so);secs.sort((a,b)=>{const ex=s=>so&&[...s.el.querySelectorAll(".srow .t")].some(t=>squash(t.textContent)===sq)?1:0;return (ex(b)-ex(a))||(b.n-a.n);}).forEach(s=>box.insertBefore(s.el,links));
+  const total=secs.reduce((a,s)=>a+s.n,0);head.textContent=total?total+" match"+(total>1?"es":"")+" across "+secs.filter(s=>s.n).length+" site"+(secs.filter(s=>s.n).length>1?"s":"")+". Tap Get to add one.":"Nothing found. Check the spelling, or leave the song box empty to see everything by the artist.";}
+
 $("impBtn").addEventListener("click",()=>doImport());
 function doImport(){const text=$("impText").value;const title=$("impTitle").value.trim()||[$("gpSong").value.trim(),$("gpArtist").value.trim()].filter(Boolean).join(" · ")||"Untitled tab";const msg=$("impMsg");msg.classList.remove("good");
   if(!text.trim()){msg.textContent="Paste a tab or chord sheet into the box first.";return false;}
@@ -2558,6 +2643,52 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden){tpPause();
 renderModules();renderSongLists();renderChips();buildTrack();setPair("Em","Am");selectTab("ode");renderHead();renderTunerSel();showChord("C");
 $("scType").value=SC.type;renderScale();renderNeck();eChoices();mUI();renderStats();micUI();setPlayIcons();
 setTimeout(checkShared,300);
+/* ---------- what you're listening to: the phone's now playing (app) or a Spotify login (website) ---------- */
+const NP={timer:0,last:null,recentAt:0};
+const spRedirect=()=>location.origin+location.pathname;
+const b64url=u8=>btoa(String.fromCharCode.apply(null,Array.from(u8))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+function npFind(title,artist){const clean=s=>String(s||"").replace(/\s*[\(\[][^\)\]]*(remaster|live|version|edit|mono|stereo|feat\.?|with )[^\)\]]*[\)\]]/ig,"").replace(/\s+-\s+.*(remaster|live|version|edit).*$/i,"").trim();
+  const a=String(artist||"").split(/,|&| feat\.? | ft\.? | x /i)[0].trim();$("gpArtist").value=a;$("gpSong").value=clean(title);updFind();show("songs");setTimeout(()=>$("importSec").scrollIntoView({behavior:"smooth",block:"start"}),60);fwSearch();}
+function npRow(t,label){const r=document.createElement("div");r.className="srow";r.innerHTML=(t.img?'<img class="npimg" alt="" src="'+esc(t.img)+'">':'<div class="ic">'+TAB_IC+'</div>')+'<div><div class="t">'+esc(t.title)+'</div><div class="m">'+esc([t.artist,t.album].filter(Boolean).join(" · "))+'</div></div>';
+  const b=document.createElement("button");b.className="btn small";b.textContent=label||"Find tab";b.addEventListener("click",()=>npFind(t.title,t.artist));r.appendChild(b);return r;}
+function npShow(t,src,note){const body=$("npBody");$("npSrc").textContent=src;body.innerHTML="";
+  if(t&&t.title){body.appendChild(npRow(t));if(!t.playing&&src)body.querySelector(".m").textContent+=" · paused";}
+  else{const d=document.createElement("div");d.className="small muted";d.textContent=note||"Nothing playing right now. Start a song in Spotify and it shows up here.";body.appendChild(d);}}
+/* ---- the phone's media session (Fretwork app on Android) ---- */
+function npPhone(){const n=window.FretworkNative;if(!n||!n.nowPlaying)return false;let r="";try{r=n.nowPlaying();}catch(e){}
+  if(r==="perm"){$("npSrc").textContent="";$("npBody").innerHTML='<div class="small">Let Fretwork see what\'s playing on your phone. It reads the song name from Spotify or any music app. No Spotify login or Premium needed.</div><div class="tiny muted">On Android 13 and newer: if the switch is greyed out, open Settings › Apps › Fretwork › ⋮ › Allow restricted settings first.</div>';
+    const b=document.createElement("button");b.className="btn small";b.textContent="Allow access";b.addEventListener("click",()=>{try{n.openNowPlayingSettings();}catch(e){}});$("npBody").appendChild(b);return true;}
+  let t=null;try{t=r?JSON.parse(r):null;}catch(e){}const app=t&&t.app?(/spotify/i.test(t.app)?"Spotify":/youtube/i.test(t.app)?"YouTube Music":"your music app"):"";
+  npShow(t,t?"From "+app:"");return true;}
+/* ---- Spotify login (website / iPhone) ---- */
+async function spLogin(){const id=$("spClient").value.trim();if(!/^[0-9a-z]{32}$/i.test(id)){toast("Paste the Client ID from your Spotify app. It's 32 letters and numbers.",5000);return;}S.spClient=id;save();
+  if(!window.crypto||!crypto.subtle){toast("Open Fretwork from its https link to connect Spotify.");return;}
+  const v=b64url(crypto.getRandomValues(new Uint8Array(48)));const ch=b64url(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v))));try{localStorage.setItem("fw-sp-v",v);}catch(e){}
+  location.href="https://accounts.spotify.com/authorize?"+new URLSearchParams({response_type:"code",client_id:id,scope:"user-read-currently-playing user-read-recently-played",code_challenge_method:"S256",code_challenge:ch,redirect_uri:spRedirect(),state:"fw"}).toString();}
+function spSave(j){S.sp={access:j.access_token,refresh:j.refresh_token||(S.sp&&S.sp.refresh)||"",exp:Date.now()+(j.expires_in||3600)*1000-60000};save();}
+async function spCallback(){const q=new URLSearchParams(location.search);if(q.get("state")!=="fw")return;const code=q.get("code");try{history.replaceState(null,"",location.pathname);}catch(e){}
+  if(!code){toast("Spotify didn't connect"+(q.get("error")?" ("+q.get("error")+")":"")+".",5000);return;}let v="";try{v=localStorage.getItem("fw-sp-v")||"";}catch(e){}
+  try{const r=await fetch("https://accounts.spotify.com/api/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({grant_type:"authorization_code",code,redirect_uri:spRedirect(),client_id:S.spClient||"",code_verifier:v})});
+    const j=await r.json();if(!j.access_token){toast("Spotify said no: "+(j.error_description||j.error||"unknown error"),6000);return;}spSave(j);show("songs");toast("Spotify connected",2500);npPoll(true);}catch(e){toast("Couldn't reach Spotify. Check your connection.");}}
+async function spToken(){if(!S.sp)return null;if(Date.now()<S.sp.exp)return S.sp.access;if(!S.sp.refresh)return null;
+  try{const r=await fetch("https://accounts.spotify.com/api/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({grant_type:"refresh_token",refresh_token:S.sp.refresh,client_id:S.spClient||""})});const j=await r.json();if(!j.access_token)return null;spSave(j);return S.sp.access;}catch(e){return null;}}
+async function spGet(path){const t=await spToken();if(!t)return {err:"auth"};let r;try{r=await fetch("https://api.spotify.com/v1"+path,{headers:{Authorization:"Bearer "+t}});}catch(e){return {err:"net"};}
+  if(r.status===204)return {};if(r.status===401){S.sp.exp=0;save();return {err:"auth"};}if(!r.ok)return {err:r.status};try{return await r.json();}catch(e){return {};}}
+const spTrack=it=>it&&it.name?{title:it.name,artist:(it.artists||[]).map(a=>a.name).join(", "),album:it.album&&it.album.name,img:it.album&&it.album.images&&it.album.images.length?it.album.images[it.album.images.length-1].url:""}:null;
+async function npSpotify(force){const now=await spGet("/me/player/currently-playing");
+  if(now.err){if(now.err==="auth"){$("npSrc").textContent="";npShow(null,"","Spotify signed out. Tap Connect Spotify to sign in again.");spUI();return;}
+    npShow(null,"Spotify",now.err===403?"Spotify blocked this. In your Spotify developer dashboard, add your Spotify account under User Management.":"Couldn't reach Spotify right now.");return;}
+  const t=spTrack(now.item);if(t)t.playing=!!now.is_playing;npShow(t,"From Spotify");
+  if(force||Date.now()-NP.recentAt>60000){NP.recentAt=Date.now();const rec=await spGet("/me/player/recently-played?limit=10");const box=$("npRecent");box.innerHTML="";
+    if(rec.items&&rec.items.length){const seen=new Set();const h=document.createElement("div");h.className="small muted";h.textContent="Recently played";box.appendChild(h);
+      rec.items.forEach(x=>{const tr=spTrack(x.track);if(!tr)return;const k=tr.title+"|"+tr.artist;if(seen.has(k)||seen.size>=6)return;seen.add(k);box.appendChild(npRow(tr));});}}}
+function spUI(){$("spRow").hidden=!!window.FretworkNative;const on=!!(S.sp&&S.sp.refresh);$("spConnect").textContent=on?"Disconnect Spotify":"Connect Spotify";$("spSetup").hidden=on||!!window.FretworkNative&&!S.spWeb;$("spClient").value=S.spClient||"";$("spRedir").textContent=spRedirect();}
+async function npPoll(force){if(curView!=="songs"||stack.length)return;if(npPhone())return;if(S.sp&&S.sp.refresh){await npSpotify(force);return;}
+  $("npSrc").textContent="";$("npBody").innerHTML='<div class="small muted">Connect Spotify to see what you\'re playing and find its tab in one tap.</div>';$("npRecent").innerHTML="";}
+$("spConnect").addEventListener("click",()=>{if(S.sp&&S.sp.refresh){S.sp=null;save();spUI();npPoll(true);toast("Spotify disconnected",2000);return;}spLogin();});
+setInterval(()=>npPoll(false),12000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")npPoll(false);});
+spUI();spCallback();
+window.npPollSoon=()=>npPoll(true);
 })();
 
 </script>
