@@ -355,6 +355,7 @@ body.hw-full .nav{opacity:0;pointer-events:none}
 .hstr.lit{filter:drop-shadow(0 0 4px var(--pc))}
 .neckwrap.hwv .nkhint{top:auto;bottom:12px;left:12px;right:auto}
 .neckwrap.full .nkhint{top:auto;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;right:auto;transform:translateX(-50%);z-index:2}
+.tvrow{display:grid;gap:8px;padding:12px 14px;border-radius:16px;background:rgba(31,224,204,.07);border:1px solid rgba(31,224,204,.3)}
 </style>
 </head>
 <body>
@@ -531,6 +532,12 @@ body.hw-full .nav{opacity:0;pointer-events:none}
         <button class="chip" id="tpWaitChip" aria-pressed="false">Wait mode</button>
         <button class="chip" id="tpGuideChip" aria-pressed="true">Guide sound</button>
         <button class="chip" id="tpSecChip" aria-pressed="true" hidden>Section ✕</button>
+        <button class="chip" id="tpTvChip" aria-pressed="false">TV mode</button>
+      </div>
+      <div class="tvrow" id="tpTvRow" hidden>
+        <div class="small"><b>TV delay</b> <span class="mono" id="tpTvOut">200 ms</span></div>
+        <input type="range" id="tpTvLag" min="0" max="600" step="10" value="200" aria-label="TV delay in milliseconds">
+        <div class="tiny muted">Smart View shows the TV a moment late. Fretwork runs ahead by this much so the TV is on time. If notes reach the strings on the TV after you hear them, raise it. If they arrive early, lower it. Turn Guide sound off or keep the TV quiet so the phone's mic only hears your guitar.</div>
       </div>
       <div class="seek"><span id="tpTimeA">0:00</span><input type="range" id="tpSeek" min="0" max="100" step="0.25" value="0" aria-label="Song position"><span id="tpTimeB">0:00</span></div>
       <div class="ctl">
@@ -1665,6 +1672,8 @@ const TP={tab:null,parsed:null,rh:null,tun:STD.slice(),capo:0,bpm:90,speed:1,pla
 const SPEEDS=[.5,.75,1,1.25];
 const spb=()=>60/(TP.bpm*TP.speed);
 const curBeat=()=>TP.playing&&ctx?(ctx.currentTime-TP.t0)/spb():TP.pos;
+const tvLag=()=>S.tv?(S.tvLag==null?.2:S.tvLag/1000):0;
+const visBeat=()=>TP.playing&&ctx?(ctx.currentTime+tvLag()-TP.t0)/spb():TP.pos;
 function guideVol(){return Math.max(0,Math.min(1,+$("tpVol").value/100));}
 function fmtT(beats){const s=Math.max(0,beats*60/(TP.bpm*TP.speed));return Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");}
 function openSong(id){selectTab(id);openScreen("s-song");}
@@ -1722,11 +1731,11 @@ function evText(e){return e.notes.map(n=>tabStr(n.s)+" string, fret "+n.fret).jo
 // playback
 function setPlayIcons(){const on=TP.playing;$("tpPlayIc").innerHTML=on?ICON_PAUSE:ICON_PLAY;$("tpMiniPlay").innerHTML='<svg viewBox="0 0 24 24">'+(on?ICON_PAUSE:ICON_PLAY)+'</svg>';
   $("tpWaitChip").setAttribute("aria-pressed",TP.mode==="wait"?"true":"false");}
-function tpSched(){const ev=TP.parsed.events,s=spb();while(TP.next<ev.length){const e=ev[TP.next];const t=TP.t0+e.beat*s;if(t>ctx.currentTime+.15)break;
+function tpSched(){const ev=TP.parsed.events,s=spb(),lag=tvLag();while(TP.next<ev.length){const e=ev[TP.next];const t=TP.t0+e.beat*s-lag;if(t>ctx.currentTime+.15)break;
   const gv=guideVol();if(TP.guide&&gv>0&&t>=ctx.currentTime-.02)e.notes.forEach((n,k)=>pluck(n.m,t+k*.014,(e.notes.length>2?.26:.46)*gv,Math.max(.15,e.dur*s*.95)));TP.next++;}}
 function tpPlay(){const ev=TP.parsed.events;if(!ev.length){toast("This tab has no notes to play.");return;}if(TP.mode==="wait")tpStop();
   const c=ac();if(TP.pos>=TP.rh.total-.01)TP.pos=0;if(TP.secB!=null&&(TP.pos<TP.secA-1e-6||TP.pos>=TP.secB))TP.pos=TP.secA;const s=spb(),bpb=TP.rh.bpb;const now=c.currentTime+.12;
-  for(let k=0;k<bpb;k++)click(now+k*s,k===0);TP.t0=now+bpb*s-TP.pos*s;TP.next=Math.max(0,idxAt(TP.pos-1e-6)+1);if(TP.evBeat[TP.next-1]!==undefined&&TP.evBeat[TP.next-1]>=TP.pos-1e-6)TP.next--;
+  for(let k=0;k<bpb;k++)click(now+k*s,k===0);TP.t0=now+bpb*s+tvLag()-TP.pos*s;TP.next=Math.max(0,idxAt(TP.pos-1e-6)+1);if(TP.evBeat[TP.next-1]!==undefined&&TP.evBeat[TP.next-1]>=TP.pos-1e-6)TP.next--;
   TP.done=TP.next;TP.hits=0;for(let i=TP.next;i<ev.length;i++){ev[i].hit=false;evCls(i,"hit",false);evCls(i,"miss",false);}
   TP.playing=true;TP.mode="play";TP.timer=setInterval(tpSched,25);Mic.subs.add(tpMicTimed);setPlayIcons();logDay();
   $("tpStatus").classList.remove("good");$("tpStatus").textContent=Mic.on?(TP.guide&&guideVol()>0?"Play along. Use headphones so the mic only hears you.":"Play along. Notes turn green when the mic hears them."):"Watch the light and play along.";}
@@ -1789,7 +1798,7 @@ const evPts=e=>e.notes.slice().sort((a,b)=>a.s-b.s).map(n=>({x:nkNoteX(n.fret),y
 function nkDraw(){if(!NK.base||!TP.parsed)return;const g=NK.g,dpr=NK.dpr,ev=TP.parsed.events;g.setTransform(dpr,0,0,dpr,0,0);g.drawImage(NK.base,0,0,NK.w,NK.h);if(!ev.length)return;
   const now=performance.now();let ci,from=null,u=1,rem=null;
   if(TP.mode==="wait"){ci=Math.min(TP.wi,ev.length-1);const a=Math.min(1,(now-TP.jumpAt)/320);u=a;if(TP.prevWi>=0&&a<1)from=ev[TP.prevWi];rem=null;}
-  else{const b=curBeat();const i=idxAt(b);if(i<0){ci=0;rem=null;}else{const e=ev[i],nx=ev[i+1];const s=spb();const tNow=b*s,tNext=nx?nx.beat*s:Infinity;const fl=nx?Math.min(.3,(tNext-e.beat*s)*.55):0;
+  else{const b=visBeat();const i=idxAt(b);if(i<0){ci=0;rem=null;}else{const e=ev[i],nx=ev[i+1];const s=spb();const tNow=b*s,tNext=nx?nx.beat*s:Infinity;const fl=nx?Math.min(.3,(tNext-e.beat*s)*.55):0;
       if(nx&&tNow>tNext-fl){ci=i+1;from=e;u=Math.max(0,Math.min(1,(tNow-(tNext-fl))/fl));rem=null;}else{ci=i;rem=Math.max(0,1-(b-e.beat)/Math.max(.05,e.dur));}}}
   for(let k=3;k>=1;k--){const e=ev[ci+k];if(!e)continue;const a=[0,.85,.55,.3][k];evPts(e).forEach(p=>nkGhost(g,p.x,p.y,p.f,a));}
   const cur=evPts(ev[ci]);
@@ -1807,12 +1816,12 @@ function tpFrame(){if($("s-song").hidden){TP.raf=0;return;}nkLayout();const ev=T
     if(TP.secB!=null&&b>=TP.secB){tpCoachSummary();tpPause();TP.pos=TP.secA;tpPlay();b=curBeat();}}
   const ci=TP.mode==="wait"?TP.wi:(b>=0?idxAt(b):-1);const showCur=ci>=0&&ci<ev.length&&(TP.mode==="wait"||(b<=ev[ci].beat+ev[ci].dur));
   if(TP.cur!==(showCur?ci:-1)){if(TP.cur>=0)evCls(TP.cur,"cur",false);TP.cur=showCur?ci:-1;if(TP.cur>=0)evCls(TP.cur,"cur",true);}
-  const viewBeat=TP.mode==="wait"&&ev[TP.wi]?ev[TP.wi].beat:Math.max(b,ev.length?Math.min(0,ev[0].beat):0);
+  const viewBeat=TP.mode==="wait"&&ev[TP.wi]?ev[TP.wi].beat:Math.max(visBeat(),ev.length?Math.min(0,ev[0].beat):0);
   const stripW=$("tpStrip").clientWidth;const winX=stripW*.42;$("tpSheet").style.transform="translateX("+(winX-(TPAD+colAt(viewBeat)*CW))+"px)";
   if(document.activeElement!==$("tpSeek"))$("tpSeek").value=String(Math.max(0,Math.min(TP.rh.total,b)));$("tpTimeA").textContent=fmtT(Math.max(0,b));
   if(HW.view==="hw")hwDraw();else nkDraw();TP.raf=requestAnimationFrame(tpFrame);}
-onOpen["s-song"]=()=>{NK.w=0;HW.w=0;hwSetView(HW.view);setTimeout(hwAuto,350);nkPrep();if(!TP.raf)TP.raf=requestAnimationFrame(tpFrame);setTimeout(tpCoachIntro,600);};
-onClose["s-song"]=()=>{if(HW.full)hwFull(false);tpStop();TP.secA=TP.secB=null;$("tpSecChip").hidden=true;};
+onOpen["s-song"]=()=>{keepAwake(true);try{if(S.tv&&native()&&native().setLandscape)native().setLandscape(true);}catch(e){}NK.w=0;HW.w=0;hwSetView(HW.view);setTimeout(hwAuto,350);nkPrep();if(!TP.raf)TP.raf=requestAnimationFrame(tpFrame);setTimeout(tpCoachIntro,600);};
+onClose["s-song"]=()=>{keepAwake(false);try{if(native()&&native().setLandscape)native().setLandscape(false);}catch(e){}if(HW.full)hwFull(false);tpStop();TP.secA=TP.secB=null;$("tpSecChip").hidden=true;};
 window.addEventListener("resize",()=>{if(!$("s-song").hidden){NK.w=0;nkLayout();}});
 /* ---------- 3D note highway for Song Master ---------- */
 const SCOL=["#FF2E4D","#FFD21F","#2A9DFF","#FF8A1F","#2EE06A","#C24BFF"]; /* low E … high e */
@@ -1841,7 +1850,7 @@ function hwBg(g,w,h,t){g.fillStyle="#030506";g.fillRect(0,0,w,h);
 function hwDraw(){if(!TP.parsed)return;hwLayout();const g=HW.g,w=HW.w,h=HW.h,dpr=HW.dpr;g.setTransform(dpr,0,0,dpr,0,0);const now=performance.now();const dt=Math.min(.1,(now-(HW.last||now))/1000);HW.last=now;
   const ev=TP.parsed.events,s=spb();
   /* where the "now" line is, in beats */
-  let target=curBeat();if(TP.mode==="wait"&&ev[TP.wi])target=ev[TP.wi].beat;
+  let target=visBeat();if(TP.mode==="wait"&&ev[TP.wi])target=ev[TP.wi].beat;
   if(TP.playing)HW.vb=target;else HW.vb+=(target-HW.vb)*Math.min(1,dt*9);const vb=HW.vb;
   /* fret window: the frets used in the next couple of seconds */
   let lo=99,hi=-1;const iNow=Math.max(0,idxAt(vb-1e-6));for(let i=Math.max(0,iNow-1);i<ev.length;i++){const e=ev[i];const z=(e.beat-vb)*s;if(z>2.2)break;if(z<-.3)continue;e.notes.forEach(n=>{if(n.fret>0){lo=Math.min(lo,n.fret);hi=Math.max(hi,n.fret);}});}
@@ -1940,6 +1949,23 @@ $("hwSpeed").addEventListener("click",()=>{$("tpSpeed").click();hwHudShow();});
 $("hwWait").addEventListener("click",()=>{$("tpWaitChip").click();hwHudShow();});
 $("hwMic").addEventListener("click",()=>{$("tpMicBtn").click();hwHudShow();});
 $("hwRestart").addEventListener("click",()=>{$("tpBack").click();hwHudShow();});
+/* iPhone: Fretwork installs from Safari's Share menu */
+(()=>{const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if(!ios||navigator.standalone||window.matchMedia("(display-mode: standalone)").matches)return;let seen=false;try{seen=!!localStorage.getItem("fw-ios-tip");}catch(e){}if(seen)return;
+  setTimeout(()=>{toast("To install Fretwork on iPhone: tap the Share button in Safari, then Add to Home Screen.",9000);try{localStorage.setItem("fw-ios-tip","1");}catch(e){}},1500);})();
+/* ---------- TV mode (Smart View / screen mirroring) ---------- */
+let wakeLk=null;
+async function keepAwake(on){try{if(native()&&native().keepAwake)native().keepAwake(on);}catch(e){}
+  try{if(on){if(!wakeLk&&navigator.wakeLock){wakeLk=await navigator.wakeLock.request("screen");wakeLk.addEventListener("release",()=>{wakeLk=null;});}}else if(wakeLk){await wakeLk.release();wakeLk=null;}}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&songOpen())keepAwake(true);});
+function tvUI(){const on=!!S.tv;$("tpTvChip").setAttribute("aria-pressed",on?"true":"false");$("tpTvRow").hidden=!on;const v=S.tvLag==null?200:S.tvLag;$("tpTvLag").value=String(v);$("tpTvOut").textContent=v+" ms";}
+function tvRetime(fn){const was=TP.playing;if(was)tpPause();fn();if(was)tpPlay();}
+$("tpTvChip").addEventListener("click",()=>{tvRetime(()=>{S.tv=!S.tv;save();});tvUI();
+  try{if(native()&&native().setLandscape)native().setLandscape(!!S.tv);}catch(e){}
+  if(S.tv){if(HW.view!=="hw")hwSetView("hw");hwFull(true,true);toast("TV mode on. Start Smart View and turn your phone sideways.",3500);}});
+$("tpTvLag").addEventListener("input",e=>{$("tpTvOut").textContent=e.target.value+" ms";});
+$("tpTvLag").addEventListener("change",e=>{tvRetime(()=>{S.tvLag=+e.target.value;save();});});
+tvUI();
 
 /* ================= play-along ================= */
 const PX=46;const P={song:SONGS[0],bpm:66,playing:false,start:0,next:0,nextT:0,timer:null,raf:null,lastChord:null,cur:-1,hit:false,hits:0,total:0,streakM:0};
