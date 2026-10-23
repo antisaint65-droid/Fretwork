@@ -643,6 +643,51 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 .thc em{font-style:normal;font-size:12px;color:rgba(255,255,255,.55);font-weight:600}.thc.big{background:rgba(100,210,255,.18);border-color:rgba(100,210,255,.5)}
 .thsteps{display:flex;gap:6px;justify-content:center}.thsteps span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:700 15px var(--sans)}.thsteps .W{background:rgba(100,210,255,.25);color:#64D2FF}.thsteps .H{background:rgba(255,159,10,.25);color:#FF9F0A}
 .thlist{margin:0;padding-left:20px;display:grid;gap:6px;color:rgba(255,255,255,.75);font-size:14.5px;line-height:1.45}.thlist b{color:#fff}
+
+/* ===== All lessons + module screens: same paper, glass and glow as the main pages ===== */
+#s-journey,#s-module{background:#000!important}
+#s-journey::before,#s-module::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(60% 40% at 15% 8%,rgba(191,90,242,.20),transparent 70%),radial-gradient(55% 40% at 95% 45%,rgba(10,132,255,.16),transparent 70%),url(paper.jpg) center/cover no-repeat,#000}
+#s-module::before{background:radial-gradient(70% 45% at 20% 5%,color-mix(in srgb,var(--acc,#64D2FF) 30%,transparent),transparent 70%),radial-gradient(55% 40% at 95% 60%,rgba(10,132,255,.12),transparent 70%),url(paper.jpg) center/cover no-repeat,#000}
+#s-journey .jfoot,#s-journey>.wrap .row:has(#streakPill),#s-journey .title{display:none}
+#journeyBody .row:has(#streakPill){display:none}
+.jhero{display:grid;grid-template-columns:84px 1fr;gap:16px;align-items:center;padding:18px 20px;border-radius:28px;
+  background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.03) 50%,rgba(255,255,255,.06));backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%);border:1px solid rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 20px 40px rgba(0,0,0,.45)}
+.jhero b{display:block;font:700 22px var(--sans);margin:2px 0}.jhero span{font-size:13.5px;color:rgba(255,255,255,.62)}
+.jring{width:84px;height:84px}.jring .bg{fill:none;stroke:rgba(255,255,255,.1);stroke-width:8}.jring .fg{fill:none;stroke:url(#trg);stroke:#64D2FF;stroke-width:8;stroke-linecap:round;transform:rotate(-90deg);transform-origin:42px 42px}
+.jring text{fill:#fff;font:700 19px var(--sans)}
+.mod{min-height:150px;padding:18px 20px;border-radius:28px!important;color:#fff;gap:10px;
+  background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.025) 50%,rgba(255,255,255,.05))!important;border:1px solid rgba(255,255,255,.13)!important;
+  backdrop-filter:blur(14px) saturate(150%)!important;-webkit-backdrop-filter:blur(14px) saturate(150%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 18px 40px rgba(0,0,0,.45);transition:transform .15s}
+.mod:active{transform:scale(.985)}
+.mod .glow,.mhero .glow{position:absolute;right:-40px;top:-40px;width:220px;height:220px;border-radius:50%;background:var(--acc);opacity:.22;filter:blur(50px);pointer-events:none}
+.mod .art{color:var(--acc);opacity:.7;width:55%}
+.mtop{position:relative;display:flex;align-items:center;gap:10px}.mnum{font:400 30px/1 var(--brand);letter-spacing:.06em;color:var(--acc)}
+.upnext{font:700 11.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:var(--acc);color:#000}
+.mod .check{position:static;width:26px;height:26px;background:#30D158}
+.mod h3{font:700 25px/1.1 var(--sans)!important;letter-spacing:-.01em;max-width:78%}
+.mod .st{letter-spacing:0!important;font:500 13.5px var(--sans)!important;color:rgba(255,255,255,.62)!important;text-transform:none}
+.mod .pb,.mhero .pb{position:relative;height:6px;border-radius:9px;background:rgba(255,255,255,.12);overflow:hidden;margin:0}
+.mod .pb i,.mhero .pb i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--acc),color-mix(in srgb,var(--acc) 50%,#fff))}
+.mod.active{border:1.5px solid color-mix(in srgb,var(--acc) 70%,transparent)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 14%,transparent),0 18px 40px rgba(0,0,0,.45)!important}
+.mhero{position:relative;overflow:hidden;padding:20px 22px;border-radius:28px;display:grid;gap:6px;
+  background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.03) 50%,rgba(255,255,255,.06));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.15)}
+.mhero .art{position:absolute;right:-8px;top:0;bottom:0;width:50%;color:var(--acc);opacity:.6;pointer-events:none}.mhero h2{margin:0;font:700 30px/1.1 var(--sans);position:relative;max-width:75%}.mhero span{position:relative;color:rgba(255,255,255,.65);font-size:14px}
+.mhero .lbl{position:relative;color:var(--acc)}
+#modLessons .lesson{border-radius:24px!important;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.025) 60%)!important;border:1px solid rgba(255,255,255,.12)!important;overflow:hidden}
+#modLessons .lesson.next{border-color:color-mix(in srgb,var(--acc) 60%,transparent)!important}
+#modLessons .lesson summary{grid-template-columns:44px 1fr 24px;padding:14px 16px}
+#modLessons .lnum{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);font:700 17px var(--sans)}
+#modLessons .lesson.next .lnum{background:var(--acc);color:#000;box-shadow:0 0 18px color-mix(in srgb,var(--acc) 50%,transparent)}
+#modLessons .lesson.done .lnum{background:#30D158}
+.ltitle{font:600 17px var(--sans)}.lmeta{font-size:13px;color:rgba(255,255,255,.55);margin-top:2px}
+.lesson .chev{width:20px;height:20px;fill:none;stroke:rgba(255,255,255,.5);stroke-width:2.4;stroke-linecap:round;transition:transform .2s}.lesson[open] .chev{transform:rotate(180deg)}
+#modLessons .lbody{display:grid;gap:14px;padding:0 16px 18px}
+.lgoal{padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--acc) 12%,transparent);border:1px solid color-mix(in srgb,var(--acc) 30%,transparent)}.lgoal .lbl{color:var(--acc);margin-bottom:2px}
+.ltips{margin:0;padding:0;list-style:none;display:grid;gap:10px}.ltips li{position:relative;padding-left:20px;font-size:15px;line-height:1.45;color:rgba(255,255,255,.82)}
+.ltips li::before{content:"";position:absolute;left:2px;top:.55em;width:8px;height:8px;border-radius:50%;background:var(--acc)}
+.lacts{display:grid;gap:8px}.lacts .btn{width:100%}.btn.mark{background:transparent;border:1.5px solid rgba(48,209,88,.6);color:#30D158;display:flex;gap:8px;justify-content:center;align-items:center}
+.btn.mark svg{stroke:#30D158!important}.btn.mark.undo{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
 </style>
 </head>
 <body>
@@ -806,7 +851,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 
 <!-- ============ SUB-SCREENS ============ -->
 <section class="screen" id="s-journey" hidden><div class="wrap">
-  <header class="shead"><button class="circ" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="stitle"><div class="eyebrow">Lessons</div><div class="big">Your Journey</div></div><span></span></header>
+  <header class="shead"><button class="circ" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="stitle"><div class="eyebrow">Fretwork</div><div class="big">All lessons</div></div><span></span></header>
   <div class="sbody" id="journeyBody"></div>
 </div></section>
 <section class="screen" id="s-module" hidden><div class="wrap">
@@ -1906,30 +1951,37 @@ const MODULES=[
   {t:"Intro to Guitar",l:[0,1,2],art:"strings"},{t:"Core Chords",l:[3,4,5],art:"dots"},{t:"Intro to Tabs",l:[6,11],art:"tab"},
   {t:"Strumming & Rhythm",l:[7,10],art:"wave"},{t:"Know the Neck",l:[8,9],art:"neck"}];
 const ART={
-  strings:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g stroke-width="1.6" opacity=".75">'+[0,1,2,3,4,5].map(i=>'<path stroke="'+["#FF2E4D","#FFD21F","#2A9DFF","#FF8A1F","#2EE06A","#C24BFF"][i]+'" d="M0 '+(30+i*16)+' Q100 '+(26+i*16)+' 200 '+(34+i*16)+'"/>').join("")+'</g><circle cx="150" cy="70" r="42" fill="none" stroke="#3FE6D4" stroke-width="2" opacity=".35"/></svg>',
-  dots:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g stroke="#6F8C93" opacity=".5">'+[0,1,2,3,4,5].map(i=>'<line x1="'+(70+i*22)+'" y1="0" x2="'+(70+i*22)+'" y2="140"/>').join("")+[0,1,2,3].map(j=>'<line x1="60" x2="200" y1="'+(20+j*34)+'" y2="'+(20+j*34)+'"/>').join("")+'</g><g fill="#1FE0CC"><circle cx="114" cy="37" r="9"/><circle cx="136" cy="71" r="9"/><circle cx="158" cy="71" r="9"/></g></svg>',
-  tab:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g stroke="#6F8C93" opacity=".45">'+[0,1,2,3,4,5].map(i=>'<line x1="40" x2="200" y1="'+(25+i*18)+'" y2="'+(25+i*18)+'"/>').join("")+'</g><g fill="#1FE0CC" font-family="monospace" font-size="15" font-weight="700"><text x="80" y="66">3</text><text x="112" y="48">5</text><text x="140" y="84">2</text><text x="170" y="30">0</text></g></svg>',
-  wave:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><path d="M40 70 Q60 20 80 70 T120 70 T160 70 T200 70" fill="none" stroke="#1FE0CC" stroke-width="3" opacity=".6"/><path d="M40 90 Q60 60 80 90 T120 90 T160 90 T200 90" fill="none" stroke="#3FE6D4" stroke-width="1.5" opacity=".35"/></svg>',
-  theory:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g fill="none" stroke="#1FE0CC" opacity=".55"><circle cx="150" cy="70" r="52" stroke-width="2"/><circle cx="150" cy="70" r="30" stroke-width="1.4"/></g><g fill="#1FE0CC" font-family="Inter, sans-serif" font-size="13" font-weight="700" text-anchor="middle" opacity=".8"><text x="150" y="30">C</text><text x="190" y="74">A</text><text x="150" y="118">F♯</text><text x="110" y="74">E♭</text></g></svg>',
-  neck:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><rect x="30" y="30" width="190" height="80" fill="#1C1214" opacity=".6"/><g stroke="#A9B4B9" opacity=".55">'+[0,1,2,3,4].map(i=>'<line x1="'+(50+i*38)+'" x2="'+(50+i*38)+'" y1="30" y2="110"/>').join("")+'</g><g fill="#1FE0CC"><circle cx="69" cy="50" r="7"/><circle cx="107" cy="70" r="7"/><circle cx="145" cy="90" r="7"/></g></svg>'};
+  strings:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g stroke-width="1.6" opacity=".75">'+[0,1,2,3,4,5].map(i=>'<path stroke="'+["#FF2E4D","#FFD21F","#2A9DFF","#FF8A1F","#2EE06A","#C24BFF"][i]+'" d="M0 '+(30+i*16)+' Q100 '+(26+i*16)+' 200 '+(34+i*16)+'"/>').join("")+'</g><circle cx="150" cy="70" r="42" fill="none" stroke="currentColor" stroke-width="2" opacity=".35"/></svg>',
+  dots:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g stroke="rgba(255,255,255,.55)" opacity=".5">'+[0,1,2,3,4,5].map(i=>'<line x1="'+(70+i*22)+'" y1="0" x2="'+(70+i*22)+'" y2="140"/>').join("")+[0,1,2,3].map(j=>'<line x1="60" x2="200" y1="'+(20+j*34)+'" y2="'+(20+j*34)+'"/>').join("")+'</g><g fill="currentColor"><circle cx="114" cy="37" r="9"/><circle cx="136" cy="71" r="9"/><circle cx="158" cy="71" r="9"/></g></svg>',
+  tab:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g stroke="rgba(255,255,255,.55)" opacity=".45">'+[0,1,2,3,4,5].map(i=>'<line x1="40" x2="200" y1="'+(25+i*18)+'" y2="'+(25+i*18)+'"/>').join("")+'</g><g fill="currentColor" font-family="monospace" font-size="15" font-weight="700"><text x="80" y="66">3</text><text x="112" y="48">5</text><text x="140" y="84">2</text><text x="170" y="30">0</text></g></svg>',
+  wave:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><path d="M40 70 Q60 20 80 70 T120 70 T160 70 T200 70" fill="none" stroke="currentColor" stroke-width="3" opacity=".6"/><path d="M40 90 Q60 60 80 90 T120 90 T160 90 T200 90" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".35"/></svg>',
+  theory:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g fill="none" stroke="currentColor" opacity=".55"><circle cx="150" cy="70" r="52" stroke-width="2"/><circle cx="150" cy="70" r="30" stroke-width="1.4"/></g><g fill="currentColor" font-family="Inter, sans-serif" font-size="13" font-weight="700" text-anchor="middle" opacity=".8"><text x="150" y="30">C</text><text x="190" y="74">A</text><text x="150" y="118">F♯</text><text x="110" y="74">E♭</text></g></svg>',
+  neck:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><rect x="30" y="30" width="190" height="80" fill="#1C1214" opacity=".6"/><g stroke="rgba(255,255,255,.6)" opacity=".55">'+[0,1,2,3,4].map(i=>'<line x1="'+(50+i*38)+'" x2="'+(50+i*38)+'" y1="30" y2="110"/>').join("")+'</g><g fill="currentColor"><circle cx="69" cy="50" r="7"/><circle cx="107" cy="70" r="7"/><circle cx="145" cy="90" r="7"/></g></svg>'};
+const MODCOL=["#64D2FF","#FF9F0A","#30D158","#BF5AF2","#FF375F","#0A84FF","#FF453A","#FFD60A","#66D4CF","#5E5CE6","#FF9F0A"];
 const CHECK='<svg viewBox="0 0 24 24" width="18" height="18" style="stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5 9-10"/></svg>';
-function renderModules(){const box=$("modules");box.innerHTML="";const nextLesson=nextLessonIdx();
-  MODULES.forEach((M,mi)=>{const done=M.l.filter(i=>S.done[i]).length;const pct=Math.round(100*done/M.l.length);const active=M.l.includes(nextLesson);
-    const b=document.createElement("button");b.className="mod"+(active?" active":"");b.type="button";
-    b.innerHTML='<div class="art">'+ART[M.art]+'</div><h3>'+M.t+'</h3>'+(pct===100?'<span class="check">'+CHECK+'</span><div class="st">COMPLETED</div>':'<div class="st">'+(done?pct+"% PROGRESS":active?"UP NEXT":M.l.length+" LESSONS")+(done||active?'<div class="pb"><i style="width:'+Math.max(pct,active?4:0)+'%"></i></div>':'')+'</div>');
+function renderModules(){const box=$("modules");box.innerHTML="";const nextLesson=nextLessonIdx();const total=LESSONS.filter((_,i)=>S.done[i]).length;const pct=Math.round(100*total/LESSONS.length);const C=2*Math.PI*34;
+  const hero=document.createElement("div");hero.className="jhero";
+  hero.innerHTML='<svg viewBox="0 0 84 84" class="jring"><circle cx="42" cy="42" r="34" class="bg"/><circle cx="42" cy="42" r="34" class="fg" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-Math.max(.02,pct/100)))+'"/><text x="42" y="48" text-anchor="middle">'+pct+'%</text></svg>'+
+    '<div><div class="lbl">Your journey</div><b>'+total+' of '+LESSONS.length+' lessons</b><span>'+MODULES.length+' modules · '+(streak()?"🔥 "+streak()+" day streak":"Start a streak today")+'</span></div>';
+  box.appendChild(hero);
+  MODULES.forEach((M,mi)=>{const done=M.l.filter(i=>S.done[i]).length;const mp=Math.round(100*done/M.l.length);const active=M.l.includes(nextLesson);const mins=M.l.reduce((a,i)=>a+(LESSONS[i].m||0),0);
+    const b=document.createElement("button");b.className="mod"+(active?" active":"")+(mp===100?" complete":"");b.type="button";b.style.setProperty("--acc",MODCOL[mi%MODCOL.length]);
+    b.innerHTML='<div class="glow"></div><div class="art">'+ART[M.art]+'</div><div class="mtop"><span class="mnum">'+String(mi+1).padStart(2,"0")+'</span>'+(mp===100?'<span class="check">'+CHECK+'</span>':active?'<span class="upnext">Up next</span>':'')+'</div>'+
+      '<h3>'+esc(M.t)+'</h3><div class="st">'+M.l.length+' lessons · '+mins+' min'+(done&&mp<100?' · '+mp+'%':'')+(mp===100?' · Completed':'')+'</div><div class="pb"><i style="width:'+Math.max(mp,active?4:0)+'%"></i></div>';
     b.addEventListener("click",()=>openModule(mi));box.appendChild(b);});
-  const total=LESSONS.filter((_,i)=>S.done[i]).length;$("jBar").style.width=(100*total/LESSONS.length)+"%";$("jCount").textContent=total+" of "+LESSONS.length+" Lessons";
-  $("streakPill").innerHTML="<b>"+streak()+"</b> day streak";}
+  $("jBar").style.width=(100*total/LESSONS.length)+"%";$("jCount").textContent=total+" of "+LESSONS.length+" Lessons";$("streakPill").innerHTML="<b>"+streak()+"</b> day streak";}
 let curModule=0;
 function openModule(mi){curModule=mi;renderModuleLessons();openScreen("s-module");}
-function renderModuleLessons(){const M=MODULES[curModule];$("modTitle").textContent=M.t;const box=$("modLessons");box.innerHTML="";const nextIdx=nextLessonIdx();
+function renderModuleLessons(){const M=MODULES[curModule];const acc=MODCOL[curModule%MODCOL.length];$("modTitle").textContent=M.t;const box=$("modLessons");box.innerHTML="";box.style.setProperty("--acc",acc);$("s-module").style.setProperty("--acc",acc);
+  const nextIdx=nextLessonIdx();const done=M.l.filter(i=>S.done[i]).length;
+  const hero=document.createElement("div");hero.className="mhero";hero.innerHTML='<div class="glow"></div><div class="art">'+ART[M.art]+'</div><div class="lbl">Module '+(curModule+1)+' of '+MODULES.length+'</div><h2>'+esc(M.t)+'</h2><span>'+done+' of '+M.l.length+' lessons done</span><div class="pb"><i style="width:'+Math.round(100*done/M.l.length)+'%"></i></div>';box.appendChild(hero);
   M.l.forEach(i=>{const L=LESSONS[i];const d=document.createElement("details");d.className="lesson"+(S.done[i]?" done":"")+(i===nextIdx?" next":"");if(i===nextIdx||M.l.length===1)d.open=true;
-    d.innerHTML='<summary><div class="lnum">'+(S.done[i]?"✓":ORDER().indexOf(i)+1)+'</div><div><div class="ltitle">'+L.t+'</div><div class="lmeta">'+L.m+' min · '+(S.done[i]?"Done":i===nextIdx?"Up next":"Not started")+'</div></div><span class="muted">▾</span></summary>';
-    const body=document.createElement("div");body.className="lbody";body.innerHTML='<div><div class="eyebrow">Goal</div><div>'+L.goal+'</div></div><ul>'+L.tips.map(t=>"<li>"+t+"</li>").join("")+"</ul>";
-    if(L.chords){const dg=document.createElement("div");dg.className="row";L.chords.forEach(c=>dg.appendChild(chordCard(c,{sm:true})));body.appendChild(dg);}
-    const acts=document.createElement("div");acts.className="row";(L.acts||[]).forEach(([lab,fn])=>{const b=document.createElement("button");b.className="btn ghost small";b.textContent=lab;b.addEventListener("click",fn);acts.appendChild(b);});
-    const mk=document.createElement("button");mk.className="btn small";mk.textContent=S.done[i]?"Mark not done":"Mark lesson done";
-    mk.addEventListener("click",()=>{if(S.done[i])delete S.done[i];else{S.done[i]=true;logDay();}save();renderModules();renderModuleLessons();});
+    d.innerHTML='<summary><div class="lnum">'+(S.done[i]?CHECK:ORDER().indexOf(i)+1)+'</div><div><div class="ltitle">'+esc(L.t)+'</div><div class="lmeta">'+L.m+' min · '+(S.done[i]?"Done":i===nextIdx?"Up next":"Not started")+'</div></div><svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary>';
+    const body=document.createElement("div");body.className="lbody";body.innerHTML='<div class="lgoal"><div class="lbl">Goal</div><div>'+esc(L.goal)+'</div></div><ul class="ltips">'+L.tips.map(t=>"<li>"+esc(t)+"</li>").join("")+"</ul>";
+    if(L.chords){const dg=document.createElement("div");dg.className="row lchords";L.chords.forEach(c=>dg.appendChild(chordCard(c,{sm:true})));body.appendChild(dg);}
+    const acts=document.createElement("div");acts.className="lacts";(L.acts||[]).forEach(([lab,fn],k)=>{const b=document.createElement("button");b.className="btn "+(k===0?"w":"g");b.textContent=lab;b.addEventListener("click",fn);acts.appendChild(b);});
+    const mk=document.createElement("button");mk.className="btn mark"+(S.done[i]?" undo":"");mk.innerHTML=S.done[i]?"Mark not done":CHECK+" Mark lesson done";
+    mk.addEventListener("click",()=>{if(S.done[i])delete S.done[i];else{S.done[i]=true;logDay();}save();renderModules();renderModuleLessons();if(typeof renderToday==="function")renderToday();});
     acts.appendChild(mk);body.appendChild(acts);d.appendChild(body);box.appendChild(d);});}
 
 /* ================= songs list + import ================= */
