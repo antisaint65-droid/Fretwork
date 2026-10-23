@@ -2981,14 +2981,14 @@ function recToBeat(t){const s=spb(),P=recPts();if(!P.length)return (t-recOffset(
 function beatToRec(b){const s=spb(),P=recPts();if(!P.length)return recOffset()+b*s;if(P.length===1)return P[0][0]+(b-P[0][1])*s;
   if(b<=P[0][1])return P[0][0]+(b-P[0][1])/recSeg(P,0,s,true);const L=P.length-1;if(b>=P[L][1])return P[L][0]+(b-P[L][1])/recSeg(P,L-1,s,true);
   let i=0;while(b>P[i+1][1])i++;return P[i][0]+(b-P[i][1])/recSeg(P,i,s,false);}
-function recSavePts(P){if(!TP.tab)return;TP.tab.syncPts=P.map(([t,b])=>[Math.round(t*1000)/1000,Math.round(b*1000)/1000]);delete TP.tab.syncOff;if(REC.key)TP.tab.syncKey=REC.key;if(S.tabs.includes(TP.tab))save();recUI();}
+function recSavePts(P){if(!TP.tab)return;delete TP.tab.syncAuto;TP.tab.syncPts=P.map(([t,b])=>[Math.round(t*1000)/1000,Math.round(b*1000)/1000]);delete TP.tab.syncOff;if(REC.key)TP.tab.syncKey=REC.key;if(S.tabs.includes(TP.tab))save();recUI();}
 /* add a point; drop old ones close by or ones that would make time run backwards */
 function recAddPt(t,b,reset){let P=reset?[]:recPts().slice();if(!reset&&!TP.tab.syncPts&&Number.isFinite(TP.tab.syncOff)){const s=spb();P=[[recOffset(),0]];}
   P=P.filter(([pt,pb])=>Math.abs(pt-t)>=3&&!(pt<t&&pb>=b)&&!(pt>t&&pb<=b));P.push([t,b]);P.sort((x,y)=>x[0]-y[0]);recSavePts(P);}
 /* nudge the notes sooner or later right here (d seconds, + = later) */
 function recNudge(d){if(!TP.tab)return;const t=recPos(),b=recToBeat(t);if(recPts().length<=1&&!REC.playing){const P=recPts();if(P.length)recSavePts([[P[0][0]+d,P[0][1]]]);else recSaveOffset(recOffset()+d);}
   else recAddPt(t,b-d/spb());toast(d>0?"Notes "+Math.abs(d)+" s later":"Notes "+Math.abs(d)+" s sooner",900);}
-function recReset(){if(!TP.tab)return;delete TP.tab.syncPts;delete TP.tab.syncOff;if(S.tabs.includes(TP.tab))save();recUI();toast("Sync cleared",1200);}
+function recReset(){if(!TP.tab)return;delete TP.tab.syncPts;delete TP.tab.syncOff;delete TP.tab.syncAuto;if(REC.on&&!REC.audio)recAutoMap();if(S.tabs.includes(TP.tab))save();recUI();toast("Started over: lined up by song length again",1800);}
 /* "the guitar starts now": the tab's first note is happening at this moment */
 function recTapFirst(){const ev=TP.parsed.events;if(!ev.length)return;recAddPt(recPos()-.04,ev[0].beat,true);toast("Synced: first note is now",1600);}
 /* double-tap the highway the moment you hear the note that's at the line */
@@ -3019,7 +3019,7 @@ async function recAutoAlign(){if(REC.align)return;if(!REC.playing){toast("Play t
   btn.textContent="Auto-align";toast("Couldn't match it. Turn the volume up, or tap when the guitar comes in.",4500);}
 /* keep in sync: keeps listening and gently corrects drift */
 const RF={on:false,frames:[],timer:0,sub:null};
-async function recFollowToggle(){if(RF.on){recFollowStop();return;}if(!(await needMic()))return;RF.on=true;RF.frames=[];
+async function recFollowToggle(){if(RF.on){recFollowStop();S.keepSync=false;save();return;}S.keepSync=true;save();if(!(await needMic()))return;RF.on=true;RF.frames=[];
   RF.sub=fr=>{if(!REC.on||!REC.playing||fr.rms<GATE*1.2)return;RF.frames.push(chromaFrame(fr));};Mic.subs.add(RF.sub);
   clearInterval(RF.timer);RF.timer=setInterval(recFollowStep,4000);recUI();toast(recSynced()?"Keeping it in sync":"Tap when the guitar starts first, then it'll keep it in sync",2500);}
 function recFollowStop(){RF.on=false;clearInterval(RF.timer);if(RF.sub)Mic.subs.delete(RF.sub);RF.frames=[];recUI();}
@@ -3029,15 +3029,23 @@ function recFollowStep(){if(!REC.on||!REC.playing||!recSynced()){RF.frames=[];re
 async function recToggle(){if(REC.on){recStop();return;}if(!recAvailable()){toast(window.FretworkNative?"Allow Fretwork to see what's playing first (Listening now page).":"Connect Spotify first on the Listening now page.",4500);return;}
   const ok=await recPoll();if(!ok){toast("Start the song in Spotify, then try again.",3500);return;}tpStop();ac();REC.on=true;REC.guideWas=TP.guide;TP.guide=false;TP.speed=1;$("tpSpeed").textContent="1x";
   $("tpGuideChip").setAttribute("aria-pressed","false");clearInterval(REC.poll);REC.poll=setInterval(recPoll,REC.audio?100:window.FretworkNative?300:2000);REC.lastB=-1;TP.done=0;TP.hits=0;HW.streak=0;
-  if(TP.tab&&REC.key&&TP.tab.syncKey&&TP.tab.syncKey!==REC.key)toast("Spotify is playing a different song than this tab.",3500);recUI();}
-function recStop(){REC.on=false;if(REC.audio)REC.audio.pause();clearInterval(REC.poll);TP.guide=REC.guideWas;$("tpGuideChip").setAttribute("aria-pressed",TP.guide?"true":"false");if(TP.playing){TP.playing=false;TP.mode=null;Mic.subs.delete(tpMicTimed);}TP.pos=Math.max(0,TP.pos);setPlayIcons();recUI();}
+  if(TP.tab&&REC.key&&TP.tab.syncKey&&TP.tab.syncKey!==REC.key)toast("Spotify is playing a different song than this tab.",3500);
+  else if(!REC.audio&&recAutoMap())toast("Lined up with Spotify. If it's off, double-tap the highway when you hear a note hit the line.",4500);
+  if(S.keepSync&&!RF.on&&!REC.audio)recFollowToggle();recUI();}
+/* first time with a song: line the tab up with Spotify's track by itself.
+   The tab starts when the song starts, stretched so it ends when the track ends (if the lengths are close). */
+function recAutoMap(){const t=TP.tab;if(!t||recSynced()||!TP.parsed||!TP.parsed.events.length)return false;const dur=REC.dur||0;const s=spb();const tot=TP.rh.total;
+  const endB=tot;/* the whole song, not just this part (another guitar may play the ending) */const tabDur=endB*s;let P;
+  if(dur>20&&tabDur>20){const r=dur/tabDur;P=r>.86&&r<1.16?[[0,0],[Math.min(dur,tabDur*r),endB]]:[[0,0]];}else P=[[0,0]];
+  recSavePts(P);t.syncAuto=1;save();return true;}
+function recStop(){REC.on=false;if(RF.on&&!S.keepSync)recFollowStop();if(REC.audio)REC.audio.pause();clearInterval(REC.poll);TP.guide=REC.guideWas;$("tpGuideChip").setAttribute("aria-pressed",TP.guide?"true":"false");if(TP.playing){TP.playing=false;TP.mode=null;Mic.subs.delete(tpMicTimed);}TP.pos=Math.max(0,TP.pos);setPlayIcons();recUI();}
 function recFrame(){const s=spb();const c=ac();const b=recToBeat(recPos());
   if(REC.playing&&!TP.playing){TP.playing=true;TP.mode="play";TP.done=Math.max(0,idxAt(b-1e-6)+1);TP.hits=0;Mic.subs.add(tpMicTimed);setPlayIcons();}
   else if(!REC.playing&&TP.playing){TP.playing=false;TP.mode=null;Mic.subs.delete(tpMicTimed);setPlayIcons();}
   if(b<REC.lastB-.75){TP.done=Math.max(0,idxAt(b-1e-6)+1);TP.parsed.events.forEach((e,i)=>{if(i>=TP.done){e.hit=false;e.miss=false;}});}REC.lastB=b;
   TP.t0=c.currentTime-b*s;TP.pos=Math.max(0,Math.min(TP.rh.total,b));
   if(TP.playing&&TP.secB!=null&&b>=TP.secB)recCmd("seek",Math.max(0,(beatToRec(TP.secA)-1.5)*1000));
-  const st=$("tpRecStat");if(st)st.textContent=(REC.playing?"Following ":"Paused in ")+(REC.src||"Spotify")+" · "+fmtDur(recPos())+(recPts().length>1?" · "+recPts().length+" sync points":recSynced()?" · synced":" · not synced yet")+(RF.on?" · keeping in sync":"");}
+  const st=$("tpRecStat");if(st)st.textContent=(REC.playing?"Following ":"Paused in ")+(REC.src||"Spotify")+" · "+fmtDur(recPos())+(TP.tab&&TP.tab.syncAuto?" · lined up by song length":recPts().length>1?" · "+recPts().length+" sync points":recSynced()?" · synced":" · not synced yet")+(RF.on?" · keeping in sync":"");}
 function recUI(){const on=REC.on;if(!on&&RF.on)recFollowStop();if($("tpRecFollow"))$("tpRecFollow").setAttribute("aria-pressed",RF.on?"true":"false");["hwRecE","hwRecL"].forEach(id=>{if($(id))$(id).hidden=!on;});$("tpRecChip").setAttribute("aria-pressed",on?"true":"false");$("tpRecRow").hidden=!on;$("hwRec").setAttribute("aria-pressed",on?"true":"false");}
 /* section loop: the part you're in */
 function loopSection(){if(TP.secB!=null){TP.secA=TP.secB=null;$("tpSecChip").hidden=true;toast("Loop off",1200);return;}const P=HW.prep;const b=TP.pos;let a=0,z=TP.rh.total,label="This section";
