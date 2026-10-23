@@ -561,6 +561,31 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 @keyframes syncfl{from{opacity:1}to{opacity:0}}
 .skipbtn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:4;border:0;border-radius:999px;padding:10px 18px;background:rgba(255,255,255,.92);color:#000;font:600 14px var(--sans);box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:nowrap}
 #labRecBtn.rec{background:#FF453A;color:#fff}
+
+/* ===== guided tour ===== */
+.tour{position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;transition:opacity .4s ease}
+.tour.on{pointer-events:auto;opacity:1}
+.tspot{position:fixed;border-radius:20px;box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 30px 6px rgba(100,210,255,.35),0 0 0 200vmax rgba(0,0,0,.74);
+  transition:left .55s cubic-bezier(.2,.8,.2,1),top .55s cubic-bezier(.2,.8,.2,1),width .55s cubic-bezier(.2,.8,.2,1),height .55s cubic-bezier(.2,.8,.2,1),border-radius .55s,opacity .4s;pointer-events:auto}
+.tour.on .tspot{animation:tpulse 2.4s ease-in-out infinite}
+@keyframes tpulse{0%,100%{box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 26px 4px rgba(100,210,255,.30),0 0 0 200vmax rgba(0,0,0,.74)}50%{box-shadow:0 0 0 2px #fff,0 0 42px 10px rgba(100,210,255,.5),0 0 0 200vmax rgba(0,0,0,.74)}}
+.tour.hero .tspot{box-shadow:0 0 0 200vmax rgba(0,0,0,.82);animation:none}
+.tcard{position:fixed;left:16px;right:16px;max-width:460px;margin:0 auto;padding:18px 20px 16px;border-radius:28px;color:#fff;
+  background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.05) 50%,rgba(255,255,255,.08)),rgba(18,18,20,.72);
+  backdrop-filter:blur(30px) saturate(170%);-webkit-backdrop-filter:blur(30px) saturate(170%);border:1px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 30px 70px rgba(0,0,0,.7);transition:top .55s cubic-bezier(.2,.8,.2,1),bottom .55s cubic-bezier(.2,.8,.2,1),opacity .25s,transform .25s}
+.tcard.swap{opacity:0;transform:translateY(6px) scale(.985)}
+.tcard.mid{top:50%!important;bottom:auto!important;transform:translateY(-50%)}.tcard.mid.swap{transform:translateY(-48%) scale(.985)}
+.tour.hero .tcard{padding:30px 24px 22px;text-align:center}.tour.hero .ttl{font:400 64px/0.95 var(--brand);letter-spacing:.02em;margin:10px 0 12px}
+.tbar{height:3px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;margin-bottom:12px}.tbar i{display:block;height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,#64D2FF,#BF5AF2,#FF375F);transition:width .55s cubic-bezier(.2,.8,.2,1)}
+.ttop{display:flex;align-items:center;gap:10px}.tbrand{font:400 20px var(--brand);letter-spacing:.12em;color:rgba(255,255,255,.8)}.tnum{flex:1;font-size:13px;color:rgba(255,255,255,.55)}
+.tour.hero .ttop{justify-content:center}.tour.hero .tnum{display:none}
+.tskip{border:0;background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);border-radius:999px;padding:6px 14px;font:500 14px var(--sans)}
+.ttl{margin:8px 0 6px;font:700 24px/1.15 var(--sans);letter-spacing:-.01em}
+.tbody{margin:0 0 16px;font:400 16.5px/1.45 var(--sans);color:rgba(255,255,255,.82)}
+.tbtns{display:flex;gap:10px;justify-content:space-between}.tbtns button{border:0;border-radius:999px;padding:13px 22px;font:600 16px var(--sans)}
+.tback{background:rgba(255,255,255,.1);color:#fff}.tnext{background:#fff;color:#000;flex:1;max-width:220px;margin-left:auto}
+.tour.hero .tnext{max-width:none}
 </style>
 </head>
 <body>
@@ -678,6 +703,11 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 <section class="view wrap" id="v-profile" hidden>
   <h1 class="title">Profile</h1>
   <div class="stats" id="stats"></div>
+  <div class="card pad tourcard" id="tourCard">
+    <b>App tour</b>
+    <div class="small muted">A quick walk through every page and button, in plain words.</div>
+    <div class="row"><button class="btn" id="tourBtn">Take the tour</button></div>
+  </div>
   <div class="card pad">
     <b>My level</b>
     <div class="small muted">Used to suggest songs you can play now.</div>
@@ -3243,7 +3273,63 @@ window.onAlb=()=>{if(PAGES[DECK.i]&&PAGES[DECK.i].id==="play")renderPlay();};
 /* ================= init ================= */
 renderModules();renderSongLists();renderChips();buildTrack();setPair("Em","Am");selectTab(S.tabs.length?S.tabs[S.tabs.length-1].id:"ode");renderHead();renderTunerSel();showChord("C");
 $("scType").value=SC.type;renderScale();renderNeck();eChoices();mUI();renderStats();micUI();setPlayIcons();
+/* ---------- guided tour: walks through the whole app, one spotlight at a time ---------- */
+const TOUR_STEPS=[
+  {t:"Welcome to Fretwork",b:"A quick tour of everything in the app. It takes about 3 minutes, and you can leave any time with Skip. You can take it again from your Profile.",hero:true},
+  {p:"today",s:".pg[data-p='today'] .dots",t:"Your pages",b:"Fretwork has six pages. Swipe left or right to move between them, tap a dot to jump to one, or tap Next section at the bottom."},
+  {p:"today",s:"#todayBox .ring",t:"Today",b:"Your progress through the lessons. Do a little each day to build a streak."},
+  {p:"today",s:"#todayGo",t:"Continue your lesson",b:"Tap this to pick up where you left off. All lessons opens the full list."},
+  {p:"find",s:"#npCard",t:"Listening now",b:"When a song plays on your phone, in Spotify or any music app, it shows up here. Tap it to find its tab in one step."},
+  {p:"find",s:"#gpSearchBtn",up:"#gpArtist",t:"Search for a tab",b:"Type an artist and a song, then tap Search. Fretwork checks 3 free Guitar Pro sites at once and puts the best match on top."},
+  {p:"find",s:"label[for='impFile'].btn,#importSec label.btn",t:"Open a file",b:"Already have a tab? Open a Guitar Pro file, a PDF or a text tab from your phone."},
+  {p:"find",s:"#labSec",t:"Make a tab from a recording",b:"Record a song playing out loud, or pick an audio file. Your private lab pulls out the guitar and writes a draft tab in a few minutes."},
+  {p:"play",s:"#tabList",t:"Your songs",b:"Every tab you add lands here. Tap one to open it in Song Master."},
+  {song:1,s:"#nkBox",t:"The highway",b:"Notes fly toward you, Rocksmith style. Each lane is a string, and the number on a note is the fret to press. Play it when it reaches the line."},
+  {song:1,s:"#tpMiniPlay",up:".pill",t:"Play and pause",b:"Play hears the song with the notes. The side buttons jump back or forward one bar."},
+  {song:1,s:"#tpStrip",t:"The tab",b:"The classic tab view scrolls along with the highway. Lines are strings, numbers are frets."},
+  {song:1,s:"#hwFullBtn",t:"Full screen",b:"Tap here, or turn your phone sideways, for the big full-screen highway. Tap the screen to show the buttons again."},
+  {song:1,s:"#tpWaitChip",t:"Wait mode",b:"The song pauses on each note until you play it, so you can learn at your own pace. It needs the mic."},
+  {song:1,s:"#tpSpeed",t:"Speed",b:"Slow the song down to learn tricky parts, then speed it back up."},
+  {song:1,s:"#tpLoopSec",t:"Loop a section",b:"Repeats the part you're in, like the chorus or a solo, until you've got it."},
+  {song:1,s:"#tpRecChip",t:"Play with the real song",b:"Start the song in Spotify and tap this. The notes follow Spotify's progress bar. If they're off, double-tap the highway when you hear a note hit the line."},
+  {song:1,s:"#tpTvChip",t:"TV mode",b:"Watching on your TV with Smart View? This makes up for the TV's delay, while your phone's mic keeps listening to you."},
+  {song:1,s:"#tpMore",t:"Song settings",b:"Pick which guitar part to show, and see the tuning and capo the song needs."},
+  {p:"tune",s:".tzmeterwrap",t:"Tuner",b:"Tap the light to start listening, then pluck a string. The needle shows how far off you are. Green in the middle means in tune."},
+  {p:"tune",s:"#tzBoard",t:"Hear each string",b:"Tap a string to hear the note it should be. It turns green when you match it."},
+  {p:"tune",s:".tzpanel",t:"Other tunings",b:"Tap SELECT for tunings like Drop D or half step down. Fretwork warns you if a song needs a different one."},
+  {p:"tools",s:".pg[data-p='tools'] .gin",t:"Tools",b:"Chord charts, scales, the Song Builder for writing your own songs, and more practice tools."},
+  {p:"me",s:"#lvlRow",t:"Your level",b:"Set how much you can play, and Fretwork suggests songs that fit."},
+  {p:"me",s:"#pMic",t:"Microphone",b:"Lets Fretwork hear you play. The sound is checked on your phone and never sent anywhere."},
+  {p:"me",s:"#tourCard",t:"See this again",b:"Come back here any time to take the tour again."},
+  {t:"You're ready to play",b:"Find a song you love, open it in Song Master, and start slow. Have fun with it.",hero:true,last:true}];
+const TOUR={i:-1,el:null,busy:false,openedSong:false};
+function tourBuild(){if(TOUR.el)return;const el=document.createElement("div");el.className="tour";el.id="tour";el.innerHTML=
+  '<div class="tspot"></div><div class="tcard" role="dialog" aria-live="polite"><div class="tbar"><i></i></div><div class="ttop"><span class="tbrand">FRETWORK</span><span class="tnum"></span><button class="tskip">Skip</button></div>'+
+  '<h3 class="ttl"></h3><p class="tbody"></p><div class="tbtns"><button class="tback">Back</button><button class="tnext">Next</button></div></div>';
+  document.body.appendChild(el);TOUR.el=el;el.querySelector(".tnext").addEventListener("click",()=>tourGo(TOUR.i+1));el.querySelector(".tback").addEventListener("click",()=>tourGo(TOUR.i-1));
+  el.querySelector(".tskip").addEventListener("click",tourEnd);el.addEventListener("click",e=>{if(e.target===el||e.target.classList.contains("tspot"))tourGo(TOUR.i+1);});
+  window.addEventListener("resize",()=>{if(TOUR.i>=0)tourPlace();});}
+function tourStart(){tourBuild();if(stack.length)while(stack.length)hideTop();TOUR.el.classList.add("on");document.body.classList.add("touring");tourGo(0);}
+function tourEnd(){if(!TOUR.el)return;TOUR.el.classList.remove("on");document.body.classList.remove("touring");if(TOUR.openedSong&&stack.includes("s-song"))closeScreen();TOUR.openedSong=false;TOUR.i=-1;S.tourDone=1;save();deckGo(0);}
+const tsleep=ms=>new Promise(r=>setTimeout(r,ms));
+function tourTarget(st){if(!st.s)return null;for(const q of st.s.split(",")){const e=document.querySelector(q.trim());if(e&&e.offsetParent!==null&&e.getBoundingClientRect().width>0)return e;}return null;}
+async function tourGo(i){if(TOUR.busy)return;if(i<0)return;if(i>=TOUR_STEPS.length){tourEnd();return;}TOUR.busy=true;const st=TOUR_STEPS[i];const card=TOUR.el.querySelector(".tcard");card.classList.add("swap");
+  try{if(st.song){if(!stack.includes("s-song")){const t=S.tabs[S.tabs.length-1];openSong(t?t.id:"ode");TOUR.openedSong=true;await tsleep(450);}}
+    else{if(stack.includes("s-song")){closeScreen();await tsleep(350);}if(st.p){const k=PAGES.findIndex(P=>P.id===st.p);if(k!==DECK.i){deckGo(k);await tsleep(560);}}}
+    const tg=tourTarget(st);if(tg){const sc=tg.closest(".gin,.screen");if(sc){tg.scrollIntoView({block:"center",behavior:"smooth"});await tsleep(380);}}
+  }catch(e){}
+  TOUR.i=i;TOUR.el.querySelector(".ttl").textContent=st.t;TOUR.el.querySelector(".tbody").textContent=st.b;TOUR.el.querySelector(".tnum").textContent=st.hero?"":(i)+" of "+(TOUR_STEPS.length-2);
+  TOUR.el.querySelector(".tbar i").style.width=Math.round(100*i/(TOUR_STEPS.length-1))+"%";TOUR.el.querySelector(".tback").style.visibility=i>0&&!st.last?"visible":"hidden";
+  TOUR.el.querySelector(".tnext").textContent=i===0?"Start the tour":st.last?"Let's play":"Next";TOUR.el.querySelector(".tskip").hidden=!!st.last;TOUR.el.classList.toggle("hero",!!st.hero);
+  tourPlace();card.classList.remove("swap");TOUR.busy=false;setTimeout(()=>{if(TOUR.i===i)tourPlace();},450);}
+function tourPlace(){const st=TOUR_STEPS[TOUR.i];if(!st)return;const spot=TOUR.el.querySelector(".tspot"),card=TOUR.el.querySelector(".tcard");const W=innerWidth,H=innerHeight;const tg=tourTarget(st);
+  if(!tg||st.hero){spot.style.cssText="left:"+(W/2)+"px;top:"+(H/2)+"px;width:0;height:0;opacity:1";card.style.top="";card.style.bottom="";card.classList.add("mid");return;}
+  card.classList.remove("mid");let r=tg.getBoundingClientRect();if(st.up){const u=document.querySelector(st.up);if(u&&u.offsetParent!==null){const a=u.getBoundingClientRect();r={left:Math.min(r.left,a.left),top:Math.min(r.top,a.top),right:Math.max(r.right,a.right),bottom:Math.max(r.bottom,a.bottom)};}}
+  const pad=8,l=Math.max(6,r.left-pad),t=Math.max(6,r.top-pad),w=Math.min(W-12,(r.right-r.left)+pad*2),h=Math.min(H*.62,(r.bottom-r.top)+pad*2);
+  const rad=Math.min(28,Math.max(14,h/2));spot.style.cssText="left:"+l+"px;top:"+t+"px;width:"+w+"px;height:"+h+"px;border-radius:"+rad+"px;opacity:1";
+  const below=t+h/2<H*.5;if(below){card.style.top=Math.min(H-card.offsetHeight-16,t+h+16)+"px";card.style.bottom="";}else{card.style.top="";card.style.bottom=Math.max(16,H-t+16)+"px";}}
 buildDeck();tidyHelp();
+$("tourBtn").addEventListener("click",tourStart);if(!S.tourDone)setTimeout(()=>{if(!S.tourDone&&!stack.length)tourStart();},1600);
 setTimeout(checkShared,300);
 /* ---------- what you're listening to: the phone's now playing (app) or a Spotify login (website) ---------- */
 const NP={timer:0,last:null,recentAt:0};
