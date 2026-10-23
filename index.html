@@ -428,7 +428,7 @@ input[type=range],.toggle input{accent-color:#fff}
 .nextbtn i{width:46px;height:46px;border-radius:50%;background:#fff;display:grid;place-items:center;transition:transform .2s}
 .nextbtn:active i{transform:translateX(3px)}
 .pg .gin>*{transition:opacity .45s ease,transform .45s cubic-bezier(.2,.8,.2,1)}
-.pg:not(.cur) .gin>*{opacity:.35;transform:translateY(8px) scale(.99)}
+
 @media (prefers-reduced-motion:reduce){.pg .gin>*{transition:none}.pg:not(.cur) .gin>*{opacity:1;transform:none}}
 .lbl{font-size:13px;font-weight:500;color:var(--l2)}
 .lbl2{font-size:15px;color:var(--l2);line-height:1.45;margin:0}
@@ -550,13 +550,13 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 .deck{background:#000 url(paper.jpg) center/cover no-repeat!important}
 .pg .amb{opacity:.10!important}
 /* clearer glass: lighter tint, softer blur so the paper reads through */
-.gcard{background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.015) 45%,rgba(255,255,255,.03))!important;
-  backdrop-filter:blur(10px) saturate(140%)!important;-webkit-backdrop-filter:blur(10px) saturate(140%)!important;
-  border-color:rgba(255,255,255,.16)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 24px 50px rgba(0,0,0,.45)!important}
-.pg[data-p="tune"] .gcard{background:rgba(0,0,0,.35)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}
+.gcard{background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.008) 45%,rgba(255,255,255,.02))!important;
+  backdrop-filter:blur(7px) saturate(130%)!important;-webkit-backdrop-filter:blur(7px) saturate(130%)!important;
+  border-color:rgba(255,255,255,.15)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 22px 46px rgba(0,0,0,.4)!important}
+.pg[data-p="tune"] .gcard{background:rgba(0,0,0,.26)!important;backdrop-filter:blur(6px)!important;-webkit-backdrop-filter:blur(6px)!important}
 .pg[data-p="tune"] .tznote{background:radial-gradient(60% 90% at 50% 50%,rgba(255,255,255,.08),rgba(255,255,255,0) 70%),rgba(0,0,0,.35)!important}
 .pg[data-p="tune"] .tzdome{background:rgba(0,0,0,.6)}
-.inner{background:rgba(255,255,255,.05)!important}
+.inner{background:rgba(255,255,255,.035)!important}
 #nkBox.synced::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 3px #30D158;animation:syncfl .6s ease-out forwards}
 @keyframes syncfl{from{opacity:1}to{opacity:0}}
 .skipbtn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:4;border:0;border-radius:999px;padding:10px 18px;background:rgba(255,255,255,.92);color:#000;font:600 14px var(--sans);box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:nowrap}
@@ -751,6 +751,11 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 .vrow.on{border-color:#64D2FF;background:rgba(100,210,255,.12)}.vrow b{display:block;font:600 16px var(--sans)}.vrow span{font-size:13px;color:rgba(255,255,255,.6)}
 .vplay{width:44px;height:44px;border-radius:50%;border:0;background:#fff;display:grid;place-items:center;padding:0}.vplay svg{width:18px;height:18px;fill:#000}.vrow.playing .vplay{background:#64D2FF}
 .vsel{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.35);display:grid;place-items:center}.vrow.on .vsel{background:#64D2FF;border-color:#64D2FF}
+
+/* smoother page swipes: titles, cards and glows move at slightly different speeds for depth */
+.pg .kick,.pg .ptitle,.pg .gcard,.pg .amb,.pg .nextbtn{will-change:transform,opacity}
+.deck{scroll-behavior:auto}
+.nextbtn{background:rgba(255,255,255,.06)!important}
 </style>
 </head>
 <body>
@@ -1809,7 +1814,7 @@ let LEFTY=!!S.lefty;
 function leftyApply(){LEFTY=!!S.lefty;document.body.classList.toggle("lefty",LEFTY);if(typeof HW!=="undefined"){HW.stage=null;HW.w=0;}if(typeof NK!=="undefined"){NK.w=0;NK.base=null;}
   const c=$("leftyChip");if(c){c.setAttribute("aria-pressed",LEFTY?"true":"false");c.textContent=LEFTY?"Left-handed: on":"Left-handed: off";}
   document.querySelectorAll(".fbscroll").forEach(el=>{requestAnimationFrame(()=>{el.scrollLeft=LEFTY?el.scrollWidth:0;});});}
-function save(){try{localStorage.setItem("fretwork.v1",JSON.stringify(S));}catch(e){toast("Couldn't save. Your browser storage may be full or blocked.");}}
+let SV=0;function save(){SV++;try{localStorage.setItem("fretwork.v1",JSON.stringify(S));}catch(e){toast("Couldn't save. Your browser storage may be full or blocked.");}}
 const dkey=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function logDay(){const t=dkey(new Date());if(!S.days.includes(t)){S.days.push(t);if(S.days.length>400)S.days=S.days.slice(-400);save();}renderStats();}
 function streak(){const set=new Set(S.days);const d=new Date();if(!set.has(dkey(d)))d.setDate(d.getDate()-1);let n=0;while(set.has(dkey(d))){n++;d.setDate(d.getDate()-1);}return n;}
@@ -4163,14 +4168,28 @@ function buildDeck(){const deck=document.createElement("div");deck.className="de
   [...$("v-profile").children].filter(c=>!c.matches("h1")).forEach(c=>put("me",c));
   /* the whole journey lives on its own screen now */
   const jb=$("journeyBody");jb.appendChild($("modules"));jb.appendChild(document.querySelector("#v-learn .jfoot"));
-  let tm=0;deck.addEventListener("scroll",()=>{clearTimeout(tm);tm=setTimeout(deckSettle,90);},{passive:true});
+  let tm=0,raf=0;deck.addEventListener("scroll",()=>{clearTimeout(tm);tm=setTimeout(deckSettle,90);if(!raf)raf=requestAnimationFrame(()=>{raf=0;deckParallax();});},{passive:true});
+  idle(()=>PAGES.forEach(P=>pageRender(P.id)));
   window.addEventListener("resize",()=>{deck.scrollLeft=DECK.i*deck.clientWidth;});
   deckSettle(true);}
 function deckGo(i,instant){const deck=$("deck");deck.scrollTo({left:i*deck.clientWidth,behavior:instant?"auto":"smooth"});if(instant)deckSettle();}
 function deckSettle(force){const deck=$("deck");const i=Math.max(0,Math.min(PAGES.length-1,Math.round(deck.scrollLeft/Math.max(1,deck.clientWidth))));if(i===DECK.i&&!force)return;
   const prev=PAGES[DECK.i];DECK.i=i;const P=PAGES[i];curView=P.view;if(prev&&prev.id==="tune"&&P.id!=="tune")stopTone();
   document.querySelectorAll(".pg").forEach((pg,k)=>{pg.classList.toggle("cur",k===i);pg.querySelector(".kick").textContent=deckKick(PAGES[k].id);});
-  if(P.id==="today")renderToday();if(P.id==="play")renderPlay();if(P.id==="find"){npPoll(true);renderLearn();bgCheckSoon();}if(P.id==="me")renderStats();if(P.id==="tune")pegUI();}
+  pageRender(P.id);if(P.id==="find")setTimeout(()=>{if(PAGES[DECK.i].id==="find"){npPoll(true);bgCheckSoon();}},350);if(P.id==="tune")pegUI();
+  /* get the pages on either side ready while you're not touching anything */
+  idle(()=>{[i-1,i+1].forEach(k=>{if(PAGES[k])pageRender(PAGES[k].id);});});}
+/* each page only rebuilds when something changed since it was last drawn */
+const PR={};const idle=fn=>(window.requestIdleCallback?requestIdleCallback(fn,{timeout:900}):setTimeout(fn,200));
+function pageRender(id,force){const k=SV+"|"+(id==="play"?(TP.tab&&TP.tab.id)+(ALB.img?1:0):"")+"|"+(id==="today"?dkey(new Date()):"");if(!force&&PR[id]===k)return;PR[id]=k;
+  try{if(id==="today")renderToday();else if(id==="play")renderPlay();else if(id==="find")renderLearn();else if(id==="me")renderStats();}catch(e){}}
+/* depth while swiping: driven by the scroll position, so it follows your finger */
+function deckParallax(){const deck=$("deck");if(!deck)return;const w=deck.clientWidth||1,x=deck.scrollLeft/w;
+  document.querySelectorAll(".pg").forEach((pg,k)=>{const d=k-x;if(Math.abs(d)>1.2){if(pg._px){pg._px=0;pg.querySelectorAll(".kick,.ptitle,.gcard,.amb,.nextbtn").forEach(e=>{e.style.transform="";e.style.opacity="";});}return;}pg._px=1;const a=Math.min(1,Math.abs(d));
+    const t=pg.querySelector(".ptitle"),kk=pg.querySelector(".kick"),c=pg.querySelector(".gcard"),n=pg.querySelector(".nextbtn");
+    if(t){t.style.transform="translate3d("+(d*w*.18)+"px,0,0)";t.style.opacity=String(1-a*.7);}if(kk){kk.style.transform="translate3d("+(d*w*.28)+"px,0,0)";kk.style.opacity=String(1-a*.8);}
+    if(c)c.style.transform="translate3d(0,0,0) scale("+(1-a*.045)+")";if(n){n.style.transform="translate3d("+(d*w*.08)+"px,0,0)";n.style.opacity=String(1-a*.5);}
+    pg.querySelectorAll(".amb").forEach((g,j)=>{g.style.transform="translate3d("+(d*w*(j?.35:.25))+"px,0,0)";});});}
 /* old view names still work: they jump to the matching page */
 function show(v){const id={learn:"today",songs:"find",tools:"tune",profile:"me"}[v]||"today";const i=PAGES.findIndex(p=>p.id===id);curView=v;if($("deck"))deckGo(i,Math.abs(i-DECK.i)>2);}
 function renderToday(){const box=$("todayBox");if(!box)return;const ni=nextLessonIdx();const done=LESSONS.filter((_,i)=>S.done[i]).length;const pct=Math.round(100*done/LESSONS.length);
@@ -4190,7 +4209,7 @@ function renderPlay(){const box=$("playBox");if(!box)return;const t=TP.tab;if(!t
   box.innerHTML='<div class="phero">'+(ALB.img?'<img alt="" src="'+esc(ALB.img.src)+'">':'<div class="vinyl"><span>'+esc(ini)+'</span></div>')+'<div><div class="ptl">'+esc(m.title||t.title)+'</div><div class="lbl">'+esc(sub)+'</div></div></div>'+
     '<button class="btn w" id="playGo"><svg width="14" height="16" viewBox="0 0 14 16"><path d="M0 0l14 8-14 8z" fill="#000"/></svg>Open Song Master</button>';
   $("playGo").addEventListener("click",()=>openSong(t.id));}
-window.onAlb=()=>{if(PAGES[DECK.i]&&PAGES[DECK.i].id==="play")renderPlay();};
+window.onAlb=()=>pageRender("play",true);
 /* ================= init ================= */
 renderModules();renderSongLists();renderChips();buildTrack();setPair("Em","Am");selectTab(S.tabs.length?S.tabs[S.tabs.length-1].id:"ode");renderHead();renderTunerSel();showChord("C");
 $("scType").value=SC.type;renderScale();renderNeck();eChoices();mUI();renderStats();micUI();setPlayIcons();
