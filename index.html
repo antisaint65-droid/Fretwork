@@ -768,6 +768,19 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 .nphero .npart{cursor:pointer}
 .spc{display:grid;gap:12px;text-align:center;justify-items:center;padding:6px 4px}.spc b{font:700 22px var(--sans)}.spc p{margin:0;color:rgba(255,255,255,.75);line-height:1.45}.spc .btn{width:100%}
 .spcic{width:64px;height:64px;border-radius:20px;background:#1ED760;display:grid;place-items:center}.spcic svg{width:32px;height:32px;fill:none;stroke:#000;stroke-width:2}
+
+/* fixed header on the background; only the cards slide */
+.dhead{position:fixed;top:0;left:0;right:0;z-index:3;pointer-events:none;padding:calc(env(safe-area-inset-top,0px) + 14px) max(20px,calc((100vw - 560px)/2 + 6px)) 0}
+.dhead>*{pointer-events:auto}.dtop{display:flex;align-items:center;gap:14px}.dhead .brandmark{margin-right:auto}
+.ddate{font:600 13.5px var(--sans);color:rgba(255,255,255,.7);margin-top:6px;letter-spacing:.01em}
+.pg{padding-top:calc(env(safe-area-inset-top,0px) + 100px)!important}
+.pg .gcard{margin-bottom:0}
+.ctitle{display:grid;gap:2px;margin-bottom:2px}.ctitle .kick{margin:0!important;font:600 13px var(--sans);color:rgba(255,255,255,.6)}.ctitle .ptitle{margin:0!important;font-size:30px}
+body.in-screen .dhead{visibility:hidden}
+#s-profile .sbody{gap:14px}
+#s-profile::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(60% 40% at 15% 8%,rgba(255,55,95,.18),transparent 70%),radial-gradient(55% 40% at 95% 45%,rgba(191,90,242,.16),transparent 70%),url(paper.jpg) center/cover no-repeat,#000}
+#s-profile{background:#000!important}
+#s-profile .card{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02) 55%)!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:24px!important}
 </style>
 </head>
 <body>
@@ -4182,7 +4195,7 @@ function tidyHelp(){const q=s=>document.querySelector(s);
     if(lab&&pp){infoize(lab,row,pp.textContent.trim());pp.remove();}}
   {const lab=q('label[for="impTitle"]');if(lab){const d=document.createElement("details");d.className="drop";d.innerHTML="<summary>Paste tab text</summary>";lab.parentNode.insertBefore(d,lab);lab.remove();
     const body=document.createElement("div");body.className="dropbody";[$("impTitle"),$("impText"),$("impBtn").parentElement].forEach(el=>body.appendChild(el));d.appendChild(body);}}
-  document.querySelectorAll('.pg[data-p="me"] .card').forEach(c=>{const b=c.querySelector(":scope > b"),h=c.querySelector(":scope > .small.muted:not([id])");if(b&&h)infoize(h,b);});
+  document.querySelectorAll('#profBody .card').forEach(c=>{const b=c.querySelector(":scope > b"),h=c.querySelector(":scope > .small.muted:not([id])");if(b&&h)infoize(h,b);});
   infoize(q("#tpRecRow > .tiny.muted:not([id])"),q("#tpRecRow b"));
   infoize(q("#tpTvRow > .tiny.muted:not([id])"),q("#tpTvRow b"));
   ["#s-neck","#s-ear"].forEach(id=>{const sc=q(id);if(!sc)return;infoize(sc.querySelector("p.muted.small"),sc.querySelector(".stitle .big"));});
@@ -4194,22 +4207,26 @@ const PAGES=[
   {id:"find",view:"songs",title:"Find a tab",glow:[["#BF5AF2",-15,150,420,.36],["#0A84FF",250,420,260,.32]]},
   {id:"play",view:"songs",title:"Song Master",glow:[["#64D2FF",10,200,380,.28],["#0A84FF",240,520,240,.22]]},
   {id:"tune",view:"tools",title:"Tuner",glow:[["#30D158",15,230,360,.3]]},
-  {id:"tools",view:"tools",title:"Tools",glow:[["#FF9F0A",-40,240,320,.24],["#BF5AF2",230,480,300,.3]]},
-  {id:"me",view:"profile",title:"Profile",glow:[["#FF375F",-40,220,320,.24],["#BF5AF2",220,470,300,.26]]}];
+  {id:"tools",view:"tools",title:"Tools",glow:[["#FF9F0A",-40,240,320,.24],["#BF5AF2",230,480,300,.3]]}];
 const DECK={i:0,els:{}};
 const CHEV='<svg width="18" height="18" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-function deckKick(id){if(id==="today")return new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+function deckKick(id){if(id==="today")return streak()?"🔥 "+streak()+" day streak":"Your practice for today";
   if(id==="find")return $("npSrc").textContent?"Listening now · "+$("npSrc").textContent:"Search 3 free Guitar Pro sites";if(id==="play")return TP.tab&&!TP.tab.builtin?TP.tab.title:"Your songs";
   if(id==="tune")return T.tuningName(OPEN)+" · "+OPEN.map(m=>NOTES[m%12]).join(" ");if(id==="tools")return "Chords, scales, Song Builder and more";return "Settings and stats";}
 function buildDeck(){const deck=document.createElement("div");deck.className="deck";deck.id="deck";document.body.insertBefore(deck,document.body.firstChild);
+  /* fixed on top of the background: the logo, the date, the page dots and your profile */
+  const hd=document.createElement("header");hd.className="dhead";hd.id="dhead";
+  hd.innerHTML='<div class="dtop"><div class="brandmark">FRETWORK</div><div class="dots">'+PAGES.map((P,k)=>'<button data-go="'+k+'" aria-label="'+esc(P.title)+'"></button>').join("")+'</div><button class="avatar" id="dAvatar" aria-label="Profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button></div><div class="ddate" id="dDate"></div>';
+  document.body.insertBefore(hd,deck.nextSibling);hd.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>deckGo(+b.dataset.go)));$("dAvatar").addEventListener("click",openProfile);
+  /* only the cards move: each page is a glow and one glass card with its title inside */
   PAGES.forEach((P,i)=>{const pg=document.createElement("section");pg.className="pg";pg.dataset.p=P.id;pg.setAttribute("aria-label",P.title);
     pg.innerHTML=P.glow.map(([c,x,y,s,o])=>'<div class="amb" style="background:'+c+';left:'+x+'px;top:'+y+'px;width:'+s+'px;height:'+s+'px;opacity:'+o+'"></div>').join("")+
-      '<div class="pghead"><div class="brandmark">FRETWORK</div><div class="dots">'+PAGES.map((_,k)=>'<button class="'+(k===i?"on":"")+'" data-go="'+k+'" aria-label="'+esc(PAGES[k].title)+'"></button>').join("")+'</div><button class="avatar" data-go="'+(PAGES.length-1)+'" aria-label="Profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button></div>'+
-      '<div class="kick"></div><h1 class="ptitle">'+esc(P.title)+'</h1><div class="gcard"><div class="gin"></div></div>'+
-      '<button class="nextbtn"><span><small>'+(i===PAGES.length-1?"Back to start":"Next section")+'</small><b>'+esc(PAGES[(i+1)%PAGES.length].title)+'</b></span><i>'+CHEV+'</i></button>';
-    deck.appendChild(pg);DECK.els[P.id]=pg.querySelector(".gin");
-    pg.querySelector(".nextbtn").addEventListener("click",()=>deckGo((i+1)%PAGES.length));
-    pg.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>deckGo(+b.dataset.go)));});
+      '<div class="gcard"><div class="gin"><div class="ctitle"><div class="kick"></div><h1 class="ptitle">'+esc(P.title)+'</h1></div></div></div>';
+    deck.appendChild(pg);DECK.els[P.id]=pg.querySelector(".gin");});
+  /* profile opens from the button at the top right */
+  const ps=document.createElement("section");ps.className="screen";ps.id="s-profile";ps.hidden=true;
+  ps.innerHTML='<div class="wrap"><header class="shead"><button class="circ" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="stitle"><div class="eyebrow">Settings and stats</div><div class="big">Profile</div></div><span></span></header><div class="sbody" id="profBody"></div></div>';
+  document.body.appendChild(ps);ps.querySelector("[data-back]").addEventListener("click",closeScreen);DECK.els.me=$("profBody");
   const put=(id,el)=>{if(el)DECK.els[id].appendChild(el);};
   /* today */
   put("today",$("installCard"));const tb=document.createElement("div");tb.id="todayBox";tb.className="todaybox";put("today",tb);const pl=document.createElement("div");pl.id="planBox";pl.className="planbox";put("today",pl);
@@ -4227,11 +4244,14 @@ function buildDeck(){const deck=document.createElement("div");deck.className="de
   let tm=0,raf=0;deck.addEventListener("scroll",()=>{clearTimeout(tm);tm=setTimeout(deckSettle,90);if(!raf)raf=requestAnimationFrame(()=>{raf=0;deckParallax();});},{passive:true});
   idle(()=>PAGES.forEach(P=>pageRender(P.id)));
   window.addEventListener("resize",()=>{deck.scrollLeft=DECK.i*deck.clientWidth;});
+  $("dDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
   deckSettle(true);}
+function openProfile(){openScreen("s-profile");pageRender("me",true);}
 function deckGo(i,instant){const deck=$("deck");deck.scrollTo({left:i*deck.clientWidth,behavior:instant?"auto":"smooth"});if(instant)deckSettle();}
 function deckSettle(force){const deck=$("deck");const i=Math.max(0,Math.min(PAGES.length-1,Math.round(deck.scrollLeft/Math.max(1,deck.clientWidth))));if(i===DECK.i&&!force)return;
   const prev=PAGES[DECK.i];DECK.i=i;const P=PAGES[i];curView=P.view;if(prev&&prev.id==="tune"&&P.id!=="tune")stopTone();
-  document.querySelectorAll(".pg").forEach((pg,k)=>{pg.classList.toggle("cur",k===i);pg.querySelector(".kick").textContent=deckKick(PAGES[k].id);});
+  document.querySelectorAll(".pg").forEach((pg,k)=>{pg.classList.toggle("cur",k===i);pg.querySelector(".kick").textContent=deckKick(PAGES[k].id);});document.querySelectorAll("#dhead .dots button").forEach((b,k)=>b.classList.toggle("on",k===i));
+  const dd=$("dDate");if(dd)dd.textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
   pageRender(P.id);if(P.id==="find")setTimeout(()=>{if(PAGES[DECK.i].id==="find"){npPoll(true);bgCheckSoon();}},350);if(P.id==="tune")pegUI();
   /* get the pages on either side ready while you're not touching anything */
   idle(()=>{[i-1,i+1].forEach(k=>{if(PAGES[k])pageRender(PAGES[k].id);});});}
@@ -4241,13 +4261,11 @@ function pageRender(id,force){const k=SV+"|"+(id==="play"?(TP.tab&&TP.tab.id)+(A
   try{if(id==="today")renderToday();else if(id==="play")renderPlay();else if(id==="find")renderLearn();else if(id==="me")renderStats();}catch(e){}}
 /* depth while swiping: driven by the scroll position, so it follows your finger */
 function deckParallax(){const deck=$("deck");if(!deck)return;const w=deck.clientWidth||1,x=deck.scrollLeft/w;
-  document.querySelectorAll(".pg").forEach((pg,k)=>{const d=k-x;if(Math.abs(d)>1.2){if(pg._px){pg._px=0;pg.querySelectorAll(".kick,.ptitle,.gcard,.amb,.nextbtn").forEach(e=>{e.style.transform="";e.style.opacity="";});}return;}pg._px=1;const a=Math.min(1,Math.abs(d));
-    const t=pg.querySelector(".ptitle"),kk=pg.querySelector(".kick"),c=pg.querySelector(".gcard"),n=pg.querySelector(".nextbtn");
-    if(t){t.style.transform="translate3d("+(d*w*.18)+"px,0,0)";t.style.opacity=String(1-a*.7);}if(kk){kk.style.transform="translate3d("+(d*w*.28)+"px,0,0)";kk.style.opacity=String(1-a*.8);}
-    if(c)c.style.transform="translate3d(0,0,0) scale("+(1-a*.045)+")";if(n){n.style.transform="translate3d("+(d*w*.08)+"px,0,0)";n.style.opacity=String(1-a*.5);}
+  document.querySelectorAll(".pg").forEach((pg,k)=>{const d=k-x;if(Math.abs(d)>1.2)return;const a=Math.min(1,Math.abs(d));const c=pg.querySelector(".gcard");
+    if(c){c.style.transform="translate3d(0,0,0) scale("+(1-a*.05)+")";c.style.opacity=String(1-a*.25);}
     pg.querySelectorAll(".amb").forEach((g,j)=>{g.style.transform="translate3d("+(d*w*(j?.35:.25))+"px,0,0)";});});}
 /* old view names still work: they jump to the matching page */
-function show(v){const id={learn:"today",songs:"find",tools:"tune",profile:"me"}[v]||"today";const i=PAGES.findIndex(p=>p.id===id);curView=v;if($("deck"))deckGo(i,Math.abs(i-DECK.i)>2);}
+function show(v){if(v==="profile"){openProfile();return;}const id={learn:"today",songs:"find",tools:"tune"}[v]||"today";const i=PAGES.findIndex(p=>p.id===id);curView=v;if($("deck"))deckGo(i,Math.abs(i-DECK.i)>2);}
 function renderToday(){const box=$("todayBox");if(!box)return;const ni=nextLessonIdx();const done=LESSONS.filter((_,i)=>S.done[i]).length;const pct=Math.round(100*done/LESSONS.length);
   const li=ni>=0?ni:LESSONS.length-1;const L=LESSONS[li];const mi=Math.max(0,MODULES.findIndex(M=>M.l.includes(li)));const M=MODULES[mi];const pos=M.l.indexOf(li)+1;const st=streak();
   const best=Object.values(S.best).reduce((a,b)=>Math.max(a,b),0);const C=2*Math.PI*78;
@@ -4272,7 +4290,7 @@ $("scType").value=SC.type;renderScale();renderNeck();eChoices();mUI();renderStat
 /* ---------- guided tour: walks through the whole app, one spotlight at a time ---------- */
 const TOUR_STEPS=[
   {t:"Welcome to Fretwork",b:"A quick tour of everything in the app. It takes about 3 minutes, and you can leave any time with Skip. You can take it again from your Profile.",hero:true},
-  {p:"today",s:".pg[data-p='today'] .dots",t:"Your pages",b:"Fretwork has six pages. Swipe left or right to move between them, tap a dot to jump to one, or tap Next section at the bottom."},
+  {p:"today",s:"#dhead .dots",t:"Your pages",b:"Fretwork has five pages. Swipe the card left or right to move between them, or tap a dot to jump to one. Your profile is the button at the top right."},
   {p:"today",s:"#todayBox .ring",t:"Today",b:"Your progress through the lessons. Do a little each day to build a streak."},
   {p:"today",s:"#todayGo",t:"Continue your lesson",b:"Tap this to pick up where you left off. All lessons opens the full course: 40 lessons, starting with music theory (the 12 notes and the circle of fifths) and going all the way to soloing."},
   {p:"today",s:"#planBox",t:"Today's practice",b:"A short plan made for you each day: a warm-up, chord changes, rhythm, your next lesson and a song. Tap one to start it. Tick them off as you go."},
@@ -4312,12 +4330,13 @@ function tourBuild(){if(TOUR.el)return;const el=document.createElement("div");el
   el.querySelector(".tskip").addEventListener("click",tourEnd);el.addEventListener("click",e=>{if(e.target===el||e.target.classList.contains("tspot"))tourGo(TOUR.i+1);});
   window.addEventListener("resize",()=>{if(TOUR.i>=0)tourPlace();});}
 function tourStart(){tourBuild();if(stack.length)while(stack.length)hideTop();TOUR.el.classList.add("on");document.body.classList.add("touring");tourGo(0);}
-function tourEnd(){setTimeout(spConnectPrompt,900);if(!TOUR.el)return;TOUR.el.classList.remove("on");document.body.classList.remove("touring");if(TOUR.openedSong&&stack.includes("s-song"))closeScreen();TOUR.openedSong=false;TOUR.i=-1;S.tourDone=1;save();deckGo(0);}
+function tourEnd(){setTimeout(spConnectPrompt,900);if(!TOUR.el)return;TOUR.el.classList.remove("on");document.body.classList.remove("touring");if(TOUR.openedSong&&stack.includes("s-song"))closeScreen();if(stack.includes("s-profile"))closeScreen();TOUR.openedSong=false;TOUR.i=-1;S.tourDone=1;save();deckGo(0);}
 const tsleep=ms=>new Promise(r=>setTimeout(r,ms));
 function tourTarget(st){if(!st.s)return null;for(const q of st.s.split(",")){const e=document.querySelector(q.trim());if(e&&e.offsetParent!==null&&e.getBoundingClientRect().width>0)return e;}return null;}
 async function tourGo(i){if(TOUR.busy)return;if(i<0)return;if(i>=TOUR_STEPS.length){tourEnd();return;}TOUR.busy=true;const st=TOUR_STEPS[i];const card=TOUR.el.querySelector(".tcard");card.classList.add("swap");
   try{if(st.song){if(!stack.includes("s-song")){const t=S.tabs[S.tabs.length-1];openSong(t?t.id:"ode");TOUR.openedSong=true;await tsleep(450);}}
-    else{if(stack.includes("s-song")){closeScreen();await tsleep(350);}if(st.p){const k=PAGES.findIndex(P=>P.id===st.p);if(k!==DECK.i){deckGo(k);await tsleep(560);}}}
+    else if(st.p==="me"){if(stack.includes("s-song")){closeScreen();await tsleep(350);}if(!stack.includes("s-profile")){openProfile();await tsleep(450);}}
+    else{if(stack.includes("s-song")){closeScreen();await tsleep(350);}if(stack.includes("s-profile")){closeScreen();await tsleep(350);}if(st.p){const k=PAGES.findIndex(P=>P.id===st.p);if(k!==DECK.i){deckGo(k);await tsleep(560);}}}
     const tg=tourTarget(st);if(tg){const sc=tg.closest(".gin,.screen");if(sc){tg.scrollIntoView({block:"center",behavior:"smooth"});await tsleep(380);}}
   }catch(e){}
   TOUR.i=i;TOUR.el.querySelector(".ttl").textContent=st.t;TOUR.el.querySelector(".tbody").textContent=st.b;TOUR.el.querySelector(".tnum").textContent=st.hero?"":(i)+" of "+(TOUR_STEPS.length-2);
