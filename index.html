@@ -2528,6 +2528,10 @@ function crashSheet(text,sent){let d=$("crashBox");if(!d){d=document.createEleme
   d.innerHTML='<div class="crashin"><b>Fretwork closed unexpectedly</b><div class="small muted">'+(sent?"The report went to your lab, so it can be fixed. You don't need to do anything.":"Copy this report and send it so it can be fixed.")+'</div><textarea class="field mono" id="crashTxt" readonly></textarea><div class="row"><button class="btn small" id="crashCopy">Copy report</button><button class="btn small ghost" id="crashClose">Close</button></div></div>';
   $("crashTxt").value=text;$("crashClose").addEventListener("click",()=>d.remove());
   $("crashCopy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(text);toast("Copied",1500);}catch(e){const t=$("crashTxt");t.focus();t.select();toast("Selected. Tap Copy.",2000);}});}
+/* the recording diary from the last try: send it once if it never reached the end */
+setTimeout(async()=>{if(!NATIVE||!NATIVE.recTrace)return;let tr="";try{tr=NATIVE.recTrace();}catch(e){}if(!tr||/finish \{"ok":true/.test(tr))return;
+  const h=tr.length+":"+tr.slice(0,40);if(S.traceSent===h)return;let st="";try{st=NATIVE.recStatus();}catch(e){}if(/"rec"|"save"/.test(st))return;
+  if(await labReport("unfinished",navigator.userAgent+"\nstatus "+st+"\n"+tr)){S.traceSent=h;save();toast("Sent the recording report so it can be fixed.",3000);}},4000);
 setTimeout(async()=>{if(!NATIVE||!NATIVE.lastCrash)return;let c="";try{c=NATIVE.lastCrash();}catch(e){}if(!c)return;const sent=await labReport("crash",c);crashSheet(c,sent);},2500);
 function openLabSetup(){openProfile();setTimeout(()=>{const c=$("labCard");if(c){c.scrollIntoView({behavior:"smooth",block:"center"});c.classList.add("flash");setTimeout(()=>c.classList.remove("flash"),1600);}},350);}
 /* a screen recording or other video: pull out just the sound, so it's small enough to send */
