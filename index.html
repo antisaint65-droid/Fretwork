@@ -1911,7 +1911,7 @@ function msRow0(r,src){const row=gpRow(r.title,(r.artist||"")+" · "+src.name,"G
       await importGp(u8,r.title+" - "+(r.artist||""));b.textContent="Added ✓";if(TP.tab&&NP.targetKey){TP.tab.syncKey=NP.targetKey;save();}tuneHeadsUp();}
     catch(e){b.disabled=false;b.textContent="Get";msg.textContent=(e&&/Guitar Pro|supported|damaged|ended early|no Guitar Pro/.test(e.message)?e.message:"Couldn't download it from "+src.name+". Try another result, or open it in your browser.");
       const a=document.createElement("a");a.className="btn ghost small";a.href=r.page;a.target="_blank";a.rel="noopener";a.textContent="Open on "+src.name;msg.appendChild(document.createElement("br"));msg.appendChild(a);}});return row;}
-async function fwSearch(){const ar=$("gpArtist").value.trim(),so=$("gpSong").value.trim();const box=$("gpResults");
+async function fwSearch(){const ar=$("gpArtist").value.trim(),so=npClean($("gpSong").value.trim())||$("gpSong").value.trim();const box=$("gpResults");
   if(!ar){box.innerHTML='<div class="small muted">Type an artist name first.</div>';$("gpArtist").focus();return;}
   gpAbort();const run=++msRun;box.innerHTML="";const t0=Date.now();
   const head=document.createElement("div");head.className="small muted";box.appendChild(head);
@@ -1929,7 +1929,7 @@ async function fwSearch(){const ar=$("gpArtist").value.trim(),so=$("gpSong").val
   if(run!==msRun)return;clearInterval(tick);$("gpSearchBtn").disabled=false;
   /* best matches first: sites with exact title hits move up */
   const sq=squash(so);secs.sort((a,b)=>{const ex=s=>so&&[...s.el.querySelectorAll(".srow .t")].some(t=>squash(t.textContent)===sq)?1:0;return (ex(b)-ex(a))||(b.n-a.n);}).forEach(s=>box.insertBefore(s.el,links));
-  if(so){const rows=[...box.querySelectorAll(".srow")].filter(x=>x._r);rows.sort((a,b)=>matchScore(b._r.title,so,null,0)-matchScore(a._r.title,so,null,0));const top=rows.slice(0,6);
+  if(so){const rows=[...box.querySelectorAll(".srow")].filter(x=>x._r);rows.sort((a,b)=>matchScore(b._r.title,so,null,0)-matchScore(a._r.title,so,null,0));const top=rows.slice(0,10);
     if(top.length){head.textContent="Checking which version fits best…";const target=NP.target&&NP.targetQ===squash(ar+so)?NP.target:0;
       await Promise.all(top.map(async row=>{try{const u8=await row._r.get();const info=await tabInfo(u8);row._r.info=info;if(info){row.querySelector(".m").textContent=(row._r.artist||"")+" · "+row._src.name+" · "+infoText(info);row._score=matchScore(row._r.title,so,info,target);}}catch(e){}}));
       if(run!==msRun)return;const best=top.filter(r=>r._score!=null).sort((a,b)=>b._score-a._score)[0];
@@ -2880,10 +2880,17 @@ function pickTrack(tracks){if(!tracks||!tracks.length)return 0;const bad=/bass|d
     const sc=ev.length/maxN-1.6*first+(/rhythm|hetfield|main|gtr ?1|guitar ?1\b/i.test(nm)?.15:0)-(/lead|solo/i.test(nm)?.1:0)-(/acoustic|clean/i.test(nm)?.05:0);if(sc>bs){bs=sc;best=i;}});return best;}
 async function tabInfo(u8){if(u8[0]===0x50&&u8[1]===0x4b){let gp7=false;try{await GP.parseSong(u8,inflateRaw);gp7=true;}catch(e){}if(!gp7){const z=await unzipGp(u8);if(!z)return null;u8=z.u8;}}
   let fw;try{fw=GP.toFretwork(await GP.parseSong(u8,inflateRaw));}catch(e){return null;}if(!fw.tracks.length)return null;const ti=pickTrack(fw.tracks);const tr=fw.tracks[ti];
-  return {u8,ti,dur:tr.total*60/(tr.bpm||120),tuning:T.tuningName(tr.tuning),std:T.sameTuning(tr.tuning,STD),capo:tr.capo||0,part:/lead|solo/i.test(tr.name)?"Lead":/rhythm/i.test(tr.name)?"Rhythm":"",tracks:fw.tracks.length,diff:tabDifficulty(tr)};}
-function infoText(i){if(!i)return "";return [fmtDur(i.dur),i.std?"":i.tuning,i.capo?"Capo "+i.capo:"",i.diff?DIFFS[i.diff.level]:"",i.part].filter(Boolean).join(" · ");}
+  const q=tabQuality(fw,tr);
+  return {u8,ti,dur:tr.total*60/(tr.bpm||120),tuning:T.tuningName(tr.tuning),std:T.sameTuning(tr.tuning,STD),capo:tr.capo||0,part:/lead|solo/i.test(tr.name)?"Lead":/rhythm/i.test(tr.name)?"Rhythm":"",tracks:fw.tracks.length,diff:tabDifficulty(tr),...q};}
+/* how complete a tab is: how much of the song the guitar part covers, when it starts, whether the whole band is written out */
+function tabQuality(fw,tr){const ev=tr.ev||[],tot=Math.max(1,tr.total||1),bpb=tr.bpb||4,spb0=60/(tr.bpm||120);const win=new Set();ev.forEach(e=>win.add(Math.floor(e[0]/(bpb*2))));
+  const nWin=Math.max(1,Math.ceil(tot/(bpb*2)));let anyWin=new Set();fw.tracks.forEach(t=>(t.ev||[]).forEach(e=>anyWin.add(Math.floor(e[0]/(bpb*2)))));
+  const cover=Math.min(1,anyWin.size/nWin),part=Math.min(1,win.size/Math.max(1,anyWin.size));return {cover,partCover:part,firstAt:ev.length?ev[0][0]*spb0:0,notes:ev.length,band:(fw.skipped||0)>0,gtrs:fw.tracks.length};}
+function infoText(i){if(!i)return "";const full=i.cover>=.8?"Full song":i.cover>=.5?"Most of the song":i.cover!=null?"Parts only":"";
+  return [full,fmtDur(i.dur),i.std?"":i.tuning,i.capo?"Capo "+i.capo:"",i.diff?DIFFS[i.diff.level]:"",i.band?"Full band":"",i.part].filter(Boolean).join(" · ");}
 function matchScore(title,want,info,target){const a=squash(title),b=squash(want);let sc=a===b?3:a.startsWith(b)?2:a.includes(b)?1:0;if(/\b(live|acoustic|cover|bass|drum|backing)\b/i.test(title)&&!/\b(live|acoustic|cover)\b/i.test(want))sc-=.6;
-  if(info){if(target>0&&info.dur>0)sc+=3*Math.max(0,1-Math.abs(info.dur-target)/25);if(info.part)sc+=.5;if(info.std)sc+=.25;if(info.tracks>1)sc+=.2;}return sc;}
+  if(info){if(target>0&&info.dur>0)sc+=3*Math.max(0,1-Math.abs(info.dur-target)/25);if(info.part)sc+=.3;if(info.std)sc+=.25;if(info.tracks>1)sc+=.2;
+    if(info.cover!=null){sc+=1.4*info.cover+.8*(info.partCover==null?info.cover:info.partCover);if(info.notes<80)sc-=1;if(info.band)sc+=.4;if(info.gtrs>=2)sc+=.2;if(info.dur>0&&info.firstAt>Math.max(45,info.dur*.35))sc-=1;}}return sc;}
 /* ---------- Songs to learn ---------- */
 function learnFind(k){return (S.learn||[]).find(x=>x.k===k);}
 function rememberHeard(t){if(!t||!t.title)return;const k=songKey(t.title,t.artist);S.heard=S.heard||[];if(learnFind(k)||S.heard.some(x=>x.k===k))return;
@@ -2891,9 +2898,9 @@ function rememberHeard(t){if(!t||!t.title)return;const k=songKey(t.title,t.artis
 function learnLater(t){const k=songKey(t.title,t.artist);S.learn=S.learn||[];if(learnFind(k)){toast("Already on your list",1500);return;}const h=(S.heard||[]).find(x=>x.k===k);
   S.learn.unshift(h?Object.assign({},h,{at:Date.now()}):{k,title:npClean(t.title),artist:npMainArtist(t.artist),album:t.album||"",img:t.img||"",dur:t.dur||0,at:Date.now(),st:"new"});
   if(h)S.heard=S.heard.filter(x=>x.k!==k);save();renderLearn();toast("Saved to Songs to learn",1600);bgCheckSoon();}
-async function silentFind(title,artist,target){const found=[];await Promise.all(SOURCES.map(async src=>{try{let list=await src.find(artist,title);list=songFilter(list.map(r=>Object.assign(r,{name:r.title,song:r.title})),title);list.slice(0,4).forEach(r=>found.push({r,src}));}catch(e){}}));
+async function silentFind(title,artist,target){const found=[];await Promise.all(SOURCES.map(async src=>{try{let list=await src.find(artist,title);list=songFilter(list.map(r=>Object.assign(r,{name:r.title,song:r.title})),title);list.slice(0,6).forEach(r=>found.push({r,src}));}catch(e){}}));
   found.sort((x,y)=>matchScore(y.r.title,title,null,0)-matchScore(x.r.title,title,null,0));let best=null,bs=-9;
-  for(const f of found.slice(0,3)){try{const u8=await SRC_GET[f.src.id](f.r.page);const info=await tabInfo(u8);const sc=matchScore(f.r.title,title,info,target);if(info&&sc>bs){bs=sc;best={site:f.src.id,siteName:f.src.name,page:f.r.page,title:f.r.title,artist:f.r.artist,info:{dur:info.dur,tuning:info.tuning,std:info.std,capo:info.capo,part:info.part,diff:info.diff}};}}catch(e){}}
+  await Promise.all(found.slice(0,6).map(async f=>{try{const u8=await SRC_GET[f.src.id](f.r.page);const info=await tabInfo(u8);const sc=matchScore(f.r.title,title,info,target);if(info&&sc>bs){bs=sc;best={site:f.src.id,siteName:f.src.name,page:f.r.page,title:f.r.title,artist:f.r.artist,info:{dur:info.dur,tuning:info.tuning,std:info.std,capo:info.capo,part:info.part,diff:info.diff,cover:info.cover,partCover:info.partCover,band:info.band,firstAt:info.firstAt,notes:info.notes,gtrs:info.gtrs}};}}catch(e){}}));
   return {n:found.length,best};}
 let bgBusy=false,bgT=0;
 async function bgCheck(){if(bgBusy||document.hidden||stack.includes("s-song"))return;const items=[...(S.learn||[]),...(S.heard||[])].filter(x=>x.st==="new"||(x.st==="none"&&Date.now()-(x.checked||0)>7*864e5));const it=items[0];if(!it)return;
