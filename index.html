@@ -746,6 +746,11 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 .factcard{display:grid;gap:8px;padding:14px 16px;border-radius:20px;background:linear-gradient(150deg,rgba(100,210,255,.14),rgba(191,90,242,.10));border:1px solid rgba(255,255,255,.14)}
 .fchips{display:flex;flex-wrap:wrap;gap:6px}.fchips span{padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.1);font:600 13px var(--sans)}
 .airow{gap:8px}.airow .btn{flex:1}
+
+.vlist{display:grid;gap:8px}.vrow{display:grid;grid-template-columns:44px 1fr 28px;gap:12px;align-items:center;padding:10px 12px;border-radius:18px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;text-align:left;width:100%}
+.vrow.on{border-color:#64D2FF;background:rgba(100,210,255,.12)}.vrow b{display:block;font:600 16px var(--sans)}.vrow span{font-size:13px;color:rgba(255,255,255,.6)}
+.vplay{width:44px;height:44px;border-radius:50%;border:0;background:#fff;display:grid;place-items:center;padding:0}.vplay svg{width:18px;height:18px;fill:#000}.vrow.playing .vplay{background:#64D2FF}
+.vsel{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.35);display:grid;place-items:center}.vrow.on .vsel{background:#64D2FF;border-color:#64D2FF}
 </style>
 </head>
 <body>
@@ -1093,7 +1098,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
     <div class="blist"><h3>What should it do?</h3><div class="small muted">Turn on what you want. Each one picks the right Gemini model by itself. Light ones barely touch your free allowance.</div><div id="aiFeat" class="aifeat"></div></div>
     <div class="blist"><h3>Voice</h3>
       <div class="row"><button class="chip" id="aiVoiceOn" aria-pressed="false">Voice: off</button><button class="chip" id="aiVoiceTest">Hear it</button><button class="chip" id="aiVoiceGet">Download the voice</button></div>
-      <label class="small muted" for="aiVoiceName">Voice</label><select class="field" id="aiVoiceName"><option value="am_michael">Michael (warm)</option><option value="am_adam">Adam (deep)</option><option value="am_eric">Eric (bright)</option><option value="am_liam">Liam (young)</option><option value="am_onyx">Onyx (low)</option><option value="am_puck">Puck (playful)</option></select>
+      <div class="small muted">Pick a voice. Tap play to hear a sample. Nothing is downloaded until you turn the voice on.</div><div class="vlist" id="aiVoices"></div>
       <div class="small muted">How much should it talk?</div>
       <div class="seg" id="aiTalk"><button type="button" data-t="chatty">Chatty</button><button type="button" data-t="normal">Normal</button><button type="button" data-t="quiet">Quiet</button></div>
       <div class="tiny muted" id="aiVoiceState"></div>
@@ -3955,12 +3960,20 @@ function aiUI(light){const card=$("aiState");if(card)card.textContent=aiLinked()
   const box=$("aiFeat");box.innerHTML="";AIF.forEach(f=>{const on=!!a.f[f.id];const row=document.createElement("button");row.type="button";row.className="aifrow"+(on?" on":"");
     row.innerHTML='<div><b>'+esc(f.n)+'</b><span>'+esc(f.d)+'</span><em>Gemini '+AIM[f.m]+(f.search?' with Google Search':'')+' · '+f.cost+' use · '+aiUse(f.id)+' of '+f.lim+' today</em></div><i class="tog"></i>';
     row.addEventListener("click",()=>{a.f[f.id]=!a.f[f.id];save();aiUI();});box.appendChild(row);});
-  const v=a.voice;$("aiVoiceOn").setAttribute("aria-pressed",v.on?"true":"false");$("aiVoiceOn").textContent=v.on?"Voice: on":"Voice: off";$("aiVoiceName").value=v.name;
+  const v=a.voice;$("aiVoiceOn").setAttribute("aria-pressed",v.on?"true":"false");$("aiVoiceOn").textContent=v.on?"Voice: on":"Voice: off";voiceList();
   document.querySelectorAll("#aiTalk button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===v.talk?"true":"false"));vUI();}
 $("aiLinkBtn").addEventListener("click",()=>{const k=$("aiKey").value.trim();if(!k){toast("Paste your key first.",2000);return;}aiLink(k);});
 $("aiUnlink").addEventListener("click",()=>{const a=aiS();delete a.key;delete a.models;save();aiUI();toast("Gemini unlinked from this phone",2000);});
 $("aiVoiceOn").addEventListener("click",()=>{const v=aiS().voice;v.on=!v.on;save();aiUI();if(v.on)voiceLoad(true);});
-$("aiVoiceName").addEventListener("change",e=>{aiS().voice.name=e.target.value;save();});
+const VOICES=[["am_michael","Michael","Warm and friendly"],["am_adam","Adam","Deep and calm"],["am_eric","Eric","Bright and clear"],["am_liam","Liam","Young and easygoing"],["am_onyx","Onyx","Low and smooth"],["am_puck","Puck","Playful and upbeat"]];
+let vSample=null;
+function voiceList(){const box=$("aiVoices");if(!box)return;const cur=aiS().voice.name||"am_michael";box.innerHTML="";
+  VOICES.forEach(([id,n,d])=>{const r=document.createElement("div");r.className="vrow"+(id===cur?" on":"");r.dataset.v=id;
+    r.innerHTML='<button class="vplay" aria-label="Play a sample of '+n+'"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></button><div><b>'+n+'</b><span>'+d+'</span></div><i class="vsel">'+(id===cur?CHECK:"")+'</i>';
+    r.querySelector(".vplay").addEventListener("click",e=>{e.stopPropagation();voiceSample(id,r);});r.addEventListener("click",()=>{aiS().voice.name=id;save();voiceList();voiceSample(id,box.querySelector('[data-v="'+id+'"]'));});box.appendChild(r);});}
+/* a short recorded sample of each voice, so you can hear it before downloading anything */
+function voiceSample(id,row){try{if(vSample){vSample.pause();vSample=null;}}catch(e){}document.querySelectorAll(".vrow.playing").forEach(x=>x.classList.remove("playing"));
+  const a=new Audio("voices/"+id+".mp3");vSample=a;if(row)row.classList.add("playing");a.onended=a.onerror=()=>{if(row)row.classList.remove("playing");};a.play().catch(()=>{if(row)row.classList.remove("playing");toast("Couldn't play the sample. Check your internet.",2500);});}
 document.querySelectorAll("#aiTalk button").forEach(b=>b.addEventListener("click",()=>{aiS().voice.talk=b.dataset.t;save();aiUI();}));
 $("aiVoiceTest").addEventListener("click",()=>{voiceSay("Hey, I'm your Fretwork teacher. I'll keep quiet while you play, and chime in when there's something worth saying.",{force:true});});
 $("aiVoiceGet").addEventListener("click",()=>voiceLoad(true));
