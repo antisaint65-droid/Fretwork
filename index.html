@@ -783,6 +783,14 @@ body.in-screen .dhead{visibility:hidden}
 #s-profile .card{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02) 55%)!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:24px!important}
 .nphero.idle .npart{opacity:.8}.nphero.idle .btn svg{vertical-align:-2px;margin-right:4px}.spbar.idle{background:linear-gradient(150deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border-color:rgba(30,215,96,.25)}
 .spbar.idle #spBack,.spbar.idle #spRew,.spbar.idle #spFwd,.spbar.idle #spFollow{opacity:.35;pointer-events:none}
+
+/* can't find it? make it! */
+.makeit{display:grid;gap:12px;padding:16px;border-radius:22px;background:linear-gradient(150deg,rgba(255,159,10,.18),rgba(255,55,95,.12));border:1px solid rgba(255,159,10,.4)}
+.mi-top{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center}.mi-top b{display:block;font:700 18px var(--sans)}.mi-top span{font-size:13.5px;color:rgba(255,255,255,.72)}
+.mi-ic{width:44px;height:44px;border-radius:14px;background:#FF9F0A;display:grid;place-items:center}.mi-ic svg{width:22px;height:22px;fill:none;stroke:#000;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.mi-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mi-opt{display:grid;gap:4px;text-align:left;padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);color:#fff}
+.mi-opt b{font:700 15.5px var(--sans)}.mi-opt span{font-size:12.5px;line-height:1.35;color:rgba(255,255,255,.65)}
+.makeit.small{padding:12px 14px}.makeit.small .mi-top b{font-size:16px}
 </style>
 </head>
 <body>
@@ -2389,6 +2397,17 @@ async function aiFacts(artist,title){if(!aiOn("facts")||!title)return null;const
 function factsCard(f){const d=document.createElement("div");d.className="factcard";
   d.innerHTML='<div class="lbl">Song facts</div><div class="fchips">'+[f.key&&"Key "+f.key,f.tuning&&f.tuning,f.capo?"Capo "+f.capo:"No capo",f.bpm&&f.bpm+" BPM",f.dur&&fmtDur(f.dur)].filter(Boolean).map(x=>"<span>"+esc(x)+"</span>").join("")+'</div>'+(f.note?'<div class="small muted">'+esc(f.note)+'</div>':'');return d;}
 const tunNorm=s=>String(s||"").toLowerCase().replace(/e standard|standard tuning|e-standard/,"standard").replace(/\(.*\)/,"").replace(/[^a-z#]/g,"");
+/* nothing found? make the tab from the recording instead */
+function makeItCard(ar,so,some){const d=document.createElement("div");d.className="makeit"+(some?" small":"");const ai=typeof aiOn==="function"&&aiOn("chordrec");
+  d.innerHTML='<div class="mi-top"><span class="mi-ic"><svg viewBox="0 0 24 24"><path d="M12 3v12M6 9l6 6 6-6M5 21h14"/></svg></span><div><b>'+(some?"Not the right song?":"Can't find it?")+' Make it!</b><span>Fretwork can build a tab of “'+esc(so)+'” from the song itself.</span></div></div>'+
+    '<div class="mi-opts"><button class="mi-opt" data-k="lab"><b>Full tab</b><span>Your lab pulls out the guitar and writes the notes. About 5 to 10 minutes.'+(labOk()?'':' Needs your lab set up.')+'</span></button>'+
+    '<button class="mi-opt" data-k="chords"><b>Chords only</b><span>'+(ai?'Gemini':'Fretwork')+' listens to 40 seconds and writes out the chords. Ready in about a minute.</span></button></div>'+
+    '<div class="tiny muted">Play the song out loud from Spotify or YouTube, phone near the speaker. A song file you own works even better for the full tab.</div>';
+  d.querySelector('[data-k="lab"]').addEventListener("click",()=>{$("labTitle").value=so;$("labArtist").value=ar;labUI();const sec=$("labSec");if(sec)sec.scrollIntoView({behavior:"smooth",block:"start"});
+    toast(labOk()?"Play the song out loud, then tap Record the song (or choose a file you own).":"Set up your lab here first, then record the song.",4000);});
+  d.querySelector('[data-k="chords"]').addEventListener("click",()=>{const t={title:so,artist:ar};if(ai){aiChordChart(t);toast("Play the song out loud now. Recording for 40 seconds…",3500);}
+    else{chordChartToggle(t);toast("Listening. Play the song out loud, then tap Stop and save chart on the Listening now card.",5000);}});
+  return d;}
 async function fwSearch(){const ar=$("gpArtist").value.trim(),so=npClean($("gpSong").value.trim())||$("gpSong").value.trim();const box=$("gpResults");
   if(!ar){box.innerHTML='<div class="small muted">Type an artist name first.</div>';$("gpArtist").focus();return;}
   gpAbort();const run=++msRun;box.innerHTML="";const t0=Date.now();FWF=null;
@@ -2423,7 +2442,8 @@ async function fwSearch(){const ar=$("gpArtist").value.trim(),so=npClean($("gpSo
       await Promise.all(top.map(async row=>{try{const u8=await row._r.get();const info=await tabInfo(u8);row._r.info=info;if(info){row.querySelector(".m").textContent=(row._r.artist||"")+" · "+row._src.name+" · "+infoText(info);row._score=matchScore(row._r.title,so,info,target);}}catch(e){}}));
       if(run!==msRun)return;const best=top.filter(r=>r._score!=null).sort((a,b)=>b._score-a._score)[0];
       if(best){const bs=document.createElement("div");bs.className="mssec best";bs.innerHTML='<div class="mshead"><b>Best match</b><span class="muted small">'+(target?"Closest to the recording":"Most complete version")+'</span></div><div class="slist"></div>';bs.querySelector(".slist").appendChild(best);box.insertBefore(bs,head.nextSibling);}}}
-  const total=secs.reduce((a,s)=>a+s.n,0);head.textContent=total?total+" match"+(total>1?"es":"")+" across "+secs.filter(s=>s.n).length+" site"+(secs.filter(s=>s.n).length>1?"s":"")+". Tap Get to add one.":"Nothing found. Check the spelling, or leave the song box empty to see everything by the artist.";}
+  const total=secs.reduce((a,s)=>a+s.n,0);head.textContent=total?total+" match"+(total>1?"es":"")+" across "+secs.filter(s=>s.n).length+" site"+(secs.filter(s=>s.n).length>1?"s":"")+". Tap Get to add one.":"Nothing found. Check the spelling, or leave the song box empty to see everything by the artist.";
+  if(so){const exact=[...box.querySelectorAll(".srow .t")].some(t=>squash(t.textContent)===squash(so));if(!total||!exact)box.insertBefore(makeItCard(ar,so,!!total),head.nextSibling);}}
 
 $("impBtn").addEventListener("click",()=>doImport());
 function doImport(){const text=$("impText").value;const title=$("impTitle").value.trim()||[$("gpSong").value.trim(),$("gpArtist").value.trim()].filter(Boolean).join(" · ")||"Untitled tab";const msg=$("impMsg");msg.classList.remove("good");
