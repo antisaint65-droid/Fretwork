@@ -722,6 +722,16 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 .pcard b{position:relative;font:700 20px/1.2 var(--sans);margin-top:4px}.pcard .pd{position:relative;font-size:14px;line-height:1.4;color:rgba(255,255,255,.68)}
 .pcard .pgo{position:relative;margin-top:auto}
 .pdots{margin-top:-2px}
+
+/* AI teacher */
+.aihero{position:relative;overflow:hidden;display:grid;gap:6px;padding:18px 20px;border-radius:26px;background:linear-gradient(150deg,rgba(100,210,255,.16),rgba(191,90,242,.12));border:1px solid rgba(255,255,255,.14)}
+.aihero .glow{position:absolute;right:-50px;top:-60px;width:200px;height:200px;border-radius:50%;background:#BF5AF2;opacity:.3;filter:blur(50px)}
+.aihero b{position:relative;font:700 21px var(--sans)}.aihero span{position:relative;font-size:14px;color:rgba(255,255,255,.72);line-height:1.45}
+.aisteps{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14.5px;color:rgba(255,255,255,.8)}.aisteps a{color:#64D2FF}
+.aifeat{display:grid;gap:8px}.aifrow{display:grid;grid-template-columns:1fr 52px;gap:12px;align-items:center;text-align:left;width:100%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);border-radius:18px;padding:12px 14px;color:#fff}
+.aifrow b{display:block;font:600 15.5px var(--sans)}.aifrow span{display:block;font-size:13px;color:rgba(255,255,255,.62);margin-top:2px;line-height:1.35}.aifrow em{display:block;font-style:normal;font-size:11.5px;color:rgba(100,210,255,.85);margin-top:5px}
+.tog{width:48px;height:28px;border-radius:999px;background:rgba(255,255,255,.18);position:relative;transition:background .2s}.tog::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
+.aifrow.on .tog{background:#30D158}.aifrow.on .tog::after{transform:translateX(20px)}
 </style>
 </head>
 <body>
@@ -858,6 +868,12 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
     <b>My level</b>
     <div class="small muted">Used to suggest songs you can play now.</div>
     <div class="row" id="lvlRow"><button class="chip" data-l="0">Beginner</button><button class="chip" data-l="1">Intermediate</button><button class="chip" data-l="2">Advanced</button></div>
+  </div>
+  <div class="card pad aicard" id="aiCard">
+    <b>AI Teacher</b>
+    <div class="small muted">Link your own free Gemini key for spoken tips, answers to your questions, hand checks and more. It costs nothing, and you choose what it does.</div>
+    <div class="tiny muted" id="aiState">Not linked yet</div>
+    <div class="row"><button class="btn" id="aiOpen">AI Teacher settings</button></div>
   </div>
   <div class="card pad" id="leftyCard">
     <b>Left-handed</b>
@@ -1045,6 +1061,28 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
   <div class="sbody">
     <div class="seg" id="thTabs"><button type="button" data-t="notes" aria-pressed="true">12 notes</button><button type="button" data-t="circle" aria-pressed="false">Circle of 5ths</button><button type="button" data-t="scales" aria-pressed="false">Scales</button><button type="button" data-t="chords" aria-pressed="false">Chords</button></div>
     <div class="thbody" id="thBody"></div>
+  </div>
+</div></section>
+
+<section class="screen" id="s-ai" hidden><div class="wrap">
+  <header class="shead"><button class="circ" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="stitle"><div class="eyebrow">Profile</div><div class="big">AI Teacher</div></div><span></span></header>
+  <div class="sbody">
+    <div class="aihero"><div class="glow"></div><b>Your own teacher, free</b><span>Fretwork uses your personal Gemini key from Google. Everything runs on your free allowance, and your key stays on this phone.</span></div>
+    <div class="blist" id="aiLinkBox"><h3>Link my Gemini</h3>
+      <ol class="aisteps"><li>In Chrome, open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with Google.</li><li>Tap <b>Create API key</b>, then copy it. It starts with <b>AIza</b>.</li><li>Paste it below and tap <b>Link</b>.</li></ol>
+      <input class="field" id="aiKey" type="password" placeholder="AIza…" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <button class="btn w" id="aiLinkBtn">Link</button>
+      <div class="status" id="aiMsg"></div></div>
+    <div class="blist" id="aiLinked" hidden><h3>Gemini is linked</h3><div class="small muted" id="aiWho"></div><button class="chip" id="aiUnlink">Unlink from this phone</button></div>
+    <div class="blist"><h3>What should it do?</h3><div class="small muted">Turn on what you want. Each one picks the right Gemini model by itself. Light ones barely touch your free allowance.</div><div id="aiFeat" class="aifeat"></div></div>
+    <div class="blist"><h3>Voice</h3>
+      <div class="row"><button class="chip" id="aiVoiceOn" aria-pressed="false">Voice: off</button><button class="chip" id="aiVoiceTest">Hear it</button><button class="chip" id="aiVoiceGet">Download the voice</button></div>
+      <label class="small muted" for="aiVoiceName">Voice</label><select class="field" id="aiVoiceName"><option value="am_michael">Michael (warm)</option><option value="am_adam">Adam (deep)</option><option value="am_eric">Eric (bright)</option><option value="am_liam">Liam (young)</option><option value="am_onyx">Onyx (low)</option><option value="am_puck">Puck (playful)</option></select>
+      <div class="small muted">How much should it talk?</div>
+      <div class="seg" id="aiTalk"><button type="button" data-t="chatty">Chatty</button><button type="button" data-t="normal">Normal</button><button type="button" data-t="quiet">Quiet</button></div>
+      <div class="tiny muted" id="aiVoiceState"></div>
+      <div class="tiny muted">It never talks while you're playing. It waits for a pause, stops the moment you press play, and won't repeat itself.</div></div>
+    <div class="tiny muted">Privacy: on Google's free tier, Google may use what's sent to improve its products. Fretwork only sends short practice summaries and your questions. Photos and audio are sent only when you tap a button to send them.</div>
   </div>
 </div></section>
 
@@ -3066,6 +3104,7 @@ function tutorSay(text,o){o=o||{};const top=stack.length?stack[stack.length-1]:"
   const el=$(id);el.textContent=text;el.classList.toggle("good",o.mood==="good");
   if(id==="tpStatus"){const a=$("tpAct");a.innerHTML="";(o.actions||[]).slice(0,2).forEach(x=>{const btn=document.createElement("button");btn.className="btn small";btn.textContent=x.label;btn.addEventListener("click",()=>{a.innerHTML="";x.fn();});a.appendChild(btn);});}
   if(o.visual&&id!=="tnHint"){const v=$(id+"Vis");if(v){v.innerHTML=o.visual;v.hidden=false;clearTimeout(tutorSay._vt);tutorSay._vt=setTimeout(()=>{v.hidden=true;},9000);}}
+  if(!o.noVoice&&typeof voiceSay==="function")try{voiceSay(text,{mood:o.mood,important:!!o.important});}catch(e){}
   return true;}
 /* ---------- listening helpers ---------- */
 const CHORD_TYPES=[["",[0,4,7],0],["m",[0,3,7],0],["7",[0,4,7,10],.035],["maj7",[0,4,7,11],.035],["m7",[0,3,7,10],.035],["sus2",[0,2,7],.03],["sus4",[0,5,7],.03],["5",[0,7],.06],["dim",[0,3,6],.05]];
@@ -3099,7 +3138,7 @@ function tpCoachSummary(){if(!Mic.on||TP.done<8)return;const pct=Math.round(100*
   const bars=Object.entries(TP.missBar).sort((a,b)=>b[1]-a[1]);const acts=[];
   if(bars.length&&pct<92){const b=+bars[0][0];const a=Math.max(0,b),z=a+1;t+=" Bars "+(a+1)+"–"+(z+1)+" gave you the most trouble.";acts.push({label:"Loop bars "+(a+1)+"–"+(z+1)+" at 75%",fn:()=>setSection(a,z,.75)});}
   else if(pct>=92&&TP.speed<1.25)acts.push({label:"Try it faster",fn:()=>{const i=SPEEDS.indexOf(TP.speed);TP.speed=SPEEDS[Math.min(SPEEDS.length-1,i+1)];$("tpSpeed").textContent=TP.speed+"x";tpPlay();}});
-  tutorSay(t+adapted,{mood:pct>=85?"good":"tip",actions:acts});tpCoachReset();}
+  const ai=typeof aiOn==="function"&&aiOn("tips");tutorSay(t+adapted,{mood:pct>=85?"good":"tip",actions:acts,noVoice:ai,important:true});if(ai)aiRunTip(t+adapted,pct);tpCoachReset();}
 function setSection(a,z,speed){const bl=barStarts();TP.secA=bl[a]||0;TP.secB=bl[z+1]!=null?bl[z+1]:TP.rh.total;TP.secLabel="Bars "+(a+1)+"–"+(z+1);if(speed){TP.speed=speed;$("tpSpeed").textContent=speed+"x";}
   $("tpSecChip").hidden=false;$("tpSecChip").textContent=TP.secLabel+" ✕";if(stack[stack.length-1]!=="s-song")openScreen("s-song");tpPause();TP.pos=TP.secA;tpPlay();}
 $("tpSecChip").addEventListener("click",()=>{TP.secA=TP.secB=null;$("tpSecChip").hidden=true;toast("Section loop off",1500);});
@@ -3509,7 +3548,7 @@ setTimeout(()=>{labUI();if((S.labJobs||[]).some(j=>["queued","separating","trans
 $("tpDiffChip").addEventListener("click",()=>{if(!TP.tab)return;const l=diffLevel();diffApply(l>=4?1:l+1);});
 $("tpAdaptChip").addEventListener("click",()=>{S.adapt=S.adapt===false;save();diffUI();toast(S.adapt===false?"Level stays where you set it":"Level adjusts as you play (with the mic on)",2200);});
 /* ---------- backup: your songs, progress and settings, saved to your private lab (or a file) ---------- */
-function backupData(){const o=JSON.parse(JSON.stringify(S));if(o.lab)delete o.lab.token;delete o.sp;return JSON.stringify({app:"Fretwork",v:1,at:Date.now(),S:o});}
+function backupData(){const o=JSON.parse(JSON.stringify(S));if(o.lab)delete o.lab.token;if(o.ai)delete o.ai.key;delete o.sp;return JSON.stringify({app:"Fretwork",v:1,at:Date.now(),S:o});}
 async function backupSave(quiet){const data=backupData();const btn=$("bkSave");
   if(labOk()){try{if(btn&&!quiet){btn.disabled=true;btn.textContent="Saving…";}const cur=await gh("/contents/backups/fretwork-backup.json");
       await gh("/contents/backups/fretwork-backup.json",{method:"PUT",body:{message:"Fretwork backup",content:b64txt(data),sha:cur&&cur.sha||undefined}});
@@ -3524,7 +3563,7 @@ async function backupRestore(fromFile){let txt=null;
     if(Date.now()-bkArm>4000){bkArm=Date.now();$("bkRestore").textContent="Tap again to replace this phone's data";setTimeout(()=>{$("bkRestore").textContent="Restore";},4000);return;}
     try{const u=await gh("/contents/backups/fretwork-backup.json",{raw:true});if(!u){toast("No backup in your lab yet.",3000);return;}txt=new TextDecoder().decode(u);}catch(e){toast("Couldn't get the backup: "+(e.message||e),4000);return;}}
   let o;try{o=JSON.parse(txt);}catch(e){toast("That isn't a Fretwork backup.",3000);return;}if(!o||o.app!=="Fretwork"||!o.S){toast("That isn't a Fretwork backup.",3000);return;}
-  const keepLab=S.lab,keepSp=S.sp;S=Object.assign({},o.S);if(keepLab)S.lab=keepLab;if(keepSp)S.sp=keepSp;["tabs","progs","days"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[];});
+  const keepLab=S.lab,keepSp=S.sp,keepAi=S.ai;S=Object.assign({},o.S);if(keepLab)S.lab=keepLab;if(keepSp)S.sp=keepSp;if(keepAi&&keepAi.key){S.ai=Object.assign({},S.ai||{},{key:keepAi.key,models:keepAi.models});}["tabs","progs","days"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[];});
   save();toast("Restored from "+new Date(o.at).toLocaleDateString()+". Reopening…",2000);setTimeout(()=>location.reload(),1200);}
 function bkUI(){const el=$("bkWhen");if(!el)return;el.textContent=(S.lastBackup?"Last backup: "+new Date(S.lastBackup).toLocaleString():"No backup yet.")+(labOk()?" Saved to your private lab, automatically once a day.":" Connect your lab on the Find a tab page for automatic backups.");}
 $("bkSave").addEventListener("click",()=>backupSave(false));$("bkRestore").addEventListener("click",()=>backupRestore(null));
@@ -3815,6 +3854,99 @@ function thWire(){const k=TH.key;const box=$("thBody");
 function openTheory(tab){TH.tab=tab||TH.tab;TH.sel=-1;openScreen("s-theory");thRender();}
 document.querySelectorAll("#thTabs button").forEach(b=>b.addEventListener("click",()=>{TH.tab=b.dataset.t;TH.sel=-1;thRender();}));
 onOpen["s-theory"]=()=>thRender();
+/* =================== AI Teacher: each person links their own free Gemini key =================== */
+const AIF=[
+  {id:"tips",n:"Spoken coaching tips",d:"Natural, friendly tips after each run, in plain words.",m:"lite",cost:"Light",lim:60},
+  {id:"ask",n:"Ask your teacher",d:"Ask anything about guitar and get a real answer for your level.",m:"lite",cost:"Light",lim:40},
+  {id:"coach",n:"Weekly check-in and goal plans",d:"A summary of your week and a plan for what to work on.",m:"lite",cost:"Light",lim:6},
+  {id:"facts",n:"Song facts and smarter search",d:"Looks up key, tuning, capo and version, and searches other names for the song.",m:"flash",cost:"Medium",lim:25,search:true},
+  {id:"hand",n:"Hand and posture check",d:"Looks at one photo of your hands and tells you what to fix.",m:"flash",cost:"Medium",lim:10},
+  {id:"listen",n:"Listen to me play",d:"Hears a short clip for buzzing, muted strings and uneven strumming.",m:"flash",cost:"Medium",lim:10},
+  {id:"tabphoto",n:"Photo of a tab",d:"Turns a picture of a tab or chord sheet into a playable tab.",m:"flash",cost:"Medium",lim:6},
+  {id:"labcheck",n:"Lab tab check",d:"Labels song sections, names the chords and adds an easy chords part to lab tabs.",m:"flash",cost:"Heavy",lim:4},
+  {id:"chordrec",n:"Chord chart from a recording",d:"Writes out the chords from 40 seconds of a song playing out loud.",m:"flash",cost:"Heavy",lim:5}];
+const AIM={lite:"Flash-Lite",flash:"Flash"};
+function aiS(){S.ai=S.ai||{};S.ai.f=S.ai.f||{tips:true,ask:true,coach:true,facts:true};S.ai.voice=S.ai.voice||{on:false,name:"am_michael",talk:"normal"};return S.ai;}
+const aiLinked=()=>!!(S.ai&&S.ai.key&&S.ai.models);
+const aiOn=id=>aiLinked()&&!!aiS().f[id];
+function aiUse(id,add){const a=aiS();const d=dkey(new Date());if(!a.use||a.use.d!==d)a.use={d,c:{}};if(add){a.use.c[id]=(a.use.c[id]||0)+1;save();}return a.use.c[id]||0;}
+/* pick the newest stable models this key can use (the "latest" names follow Google's updates by themselves) */
+function aiPick(names){const ok=names.filter(n=>/gemini/.test(n)&&!/tts|image|live|embed|audio|robot|computer|learnlm|gemma|aqa|vision|thinking/.test(n));
+  const ver=n=>{const m=/gemini-(\d+(?:\.\d+)?)/.exec(n);return m?parseFloat(m[1]):0;};const stable=n=>!/preview|exp/.test(n);
+  const best=(test,latest)=>{if(ok.includes(latest))return latest;const c=ok.filter(test);c.sort((a,b)=>(stable(b)-stable(a))||(ver(b)-ver(a))||(a.length-b.length));return c[0]||null;};
+  const lite=best(n=>/flash-lite/.test(n),"gemini-flash-lite-latest"),flash=best(n=>/flash/.test(n)&&!/lite/.test(n),"gemini-flash-latest");return {lite:lite||flash,flash:flash||lite};}
+async function aiLink(key){const msg=$("aiMsg");msg.classList.remove("good");msg.textContent="Checking your key…";
+  try{let names=[],tok="";for(let i=0;i<4;i++){const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200"+(tok?"&pageToken="+tok:""),{headers:{"x-goog-api-key":key}});
+      if(!r.ok){msg.textContent=r.status===400||r.status===403?"Google didn't accept that key. Copy it again from AI Studio (it starts with AIza).":"Google said "+r.status+". Try again in a minute.";return;}
+      const j=await r.json();(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes("generateContent")).forEach(m=>names.push(String(m.name).replace(/^models\//,"")));tok=j.nextPageToken;if(!tok)break;}
+    const mods=aiPick(names);if(!mods.flash){msg.textContent="That key works, but no Gemini Flash model is available on it.";return;}
+    const a=aiS();a.key=key;a.models=mods;a.linkedAt=Date.now();save();$("aiKey").value="";msg.classList.add("good");msg.textContent="Linked. Using "+mods.lite+" and "+mods.flash+".";aiUI();toast("Gemini linked",1800);}
+  catch(e){msg.textContent="Couldn't reach Google. Check your internet and try again.";}}
+class AIErr extends Error{constructor(m,k){super(m);this.kind=k;}}
+/* one call to Gemini; parts are {text} or {inline_data:{mime_type,data}} */
+async function gem(id,parts,o){o=o||{};const F=AIF.find(f=>f.id===id);if(!aiOn(id))throw new AIErr("off","off");if(aiUse(id)>=F.lim)throw new AIErr("You've used today's "+F.n.toLowerCase()+" ("+F.lim+"). It resets tomorrow.","limit");
+  const a=aiS();const model=a.models[o.model||F.m]||a.models.flash;const body={contents:(o.history||[]).concat([{role:"user",parts}]),generationConfig:{temperature:o.temp==null?.6:o.temp,maxOutputTokens:o.max||600}};
+  if(o.system)body.systemInstruction={parts:[{text:o.system}]};if(o.json&&!F.search)body.generationConfig.responseMimeType="application/json";if(F.search&&o.search!==false)body.tools=[{google_search:{}}];
+  const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),o.timeout||45000);let r;
+  try{r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":a.key},body:JSON.stringify(body),signal:ctl.signal});}
+  catch(e){throw new AIErr(e.name==="AbortError"?"Gemini took too long. Try again.":"Couldn't reach Gemini. Check your internet.","net");}finally{clearTimeout(tm);}
+  if(r.status===429)throw new AIErr("Your free Gemini limit is used up for now. It resets soon, usually by tomorrow.","quota");
+  if(r.status===400||r.status===403){const t=await r.text().catch(()=>"");if(/API key|API_KEY|permission/i.test(t))throw new AIErr("Gemini didn't accept your key. Link it again in AI Teacher settings.","key");throw new AIErr("Gemini couldn't handle that request.","bad");}
+  if(!r.ok)throw new AIErr("Gemini had a problem ("+r.status+"). Try again in a minute.","err");
+  const j=await r.json();const txt=((j.candidates||[])[0]||{}).content;const out=txt&&txt.parts?txt.parts.map(p=>p.text||"").join("").trim():"";if(!out)throw new AIErr("Gemini didn't answer that one.","empty");aiUse(id,true);aiUI(true);
+  if(o.json){const m=out.replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/,"");const s0=m.indexOf("{"),s1=m.lastIndexOf("}");try{return JSON.parse(m.slice(s0,s1+1));}catch(e){throw new AIErr("Gemini's answer came back garbled. Try again.","parse");}}return out;}
+function aiCtx(){const ni=nextLessonIdx();const L=ni>=0?LESSONS[ni]:null;const done=LESSONS.filter((_,i)=>S.done[i]).length;
+  return "Student profile: "+["Beginner","Intermediate","Advanced"][myLevel()]+" guitarist, "+done+" of "+LESSONS.length+" lessons done"+(L?", next lesson: \""+L.t+"\"":"")+", tuning "+T.tuningName(OPEN)+(S.lefty?", left-handed":"")+", practice streak "+streak()+" days"+(TP.tab&&!TP.tab.builtin?", working on \""+TP.tab.title+"\"":"")+".";}
+const AISYS="You are a warm, encouraging, expert guitar teacher inside the Fretwork app. Talk like a real teacher sitting next to the student: plain words, short sentences, no jargon unless you explain it. Be specific and practical. Never mention being an AI model or Gemini. Don't write song lyrics.";
+const aiErrMsg=e=>e&&e.kind&&e.kind!=="off"?e.message:"";
+/* ---------- settings screen ---------- */
+function aiUI(light){const card=$("aiState");if(card)card.textContent=aiLinked()?"Linked · "+AIF.filter(f=>aiS().f[f.id]).length+" features on":"Not linked yet";if(light&&$("s-ai").hidden)return;
+  const a=aiS();$("aiLinkBox").hidden=aiLinked();$("aiLinked").hidden=!aiLinked();if(aiLinked())$("aiWho").textContent="Using "+a.models.lite+" (light jobs) and "+a.models.flash+" (photos, audio, web search).";
+  const box=$("aiFeat");box.innerHTML="";AIF.forEach(f=>{const on=!!a.f[f.id];const row=document.createElement("button");row.type="button";row.className="aifrow"+(on?" on":"");
+    row.innerHTML='<div><b>'+esc(f.n)+'</b><span>'+esc(f.d)+'</span><em>Gemini '+AIM[f.m]+(f.search?' with Google Search':'')+' · '+f.cost+' use · '+aiUse(f.id)+' of '+f.lim+' today</em></div><i class="tog"></i>';
+    row.addEventListener("click",()=>{a.f[f.id]=!a.f[f.id];save();aiUI();});box.appendChild(row);});
+  const v=a.voice;$("aiVoiceOn").setAttribute("aria-pressed",v.on?"true":"false");$("aiVoiceOn").textContent=v.on?"Voice: on":"Voice: off";$("aiVoiceName").value=v.name;
+  document.querySelectorAll("#aiTalk button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===v.talk?"true":"false"));vUI();}
+$("aiLinkBtn").addEventListener("click",()=>{const k=$("aiKey").value.trim();if(!k){toast("Paste your key first.",2000);return;}aiLink(k);});
+$("aiUnlink").addEventListener("click",()=>{const a=aiS();delete a.key;delete a.models;save();aiUI();toast("Gemini unlinked from this phone",2000);});
+$("aiVoiceOn").addEventListener("click",()=>{const v=aiS().voice;v.on=!v.on;save();aiUI();if(v.on)voiceLoad(true);});
+$("aiVoiceName").addEventListener("change",e=>{aiS().voice.name=e.target.value;save();});
+document.querySelectorAll("#aiTalk button").forEach(b=>b.addEventListener("click",()=>{aiS().voice.talk=b.dataset.t;save();aiUI();}));
+$("aiVoiceTest").addEventListener("click",()=>{voiceSay("Hey, I'm your Fretwork teacher. I'll keep quiet while you play, and chime in when there's something worth saying.",{force:true});});
+$("aiVoiceGet").addEventListener("click",()=>voiceLoad(true));
+$("aiOpen").addEventListener("click",()=>openScreen("s-ai"));onOpen["s-ai"]=()=>aiUI();
+/* =================== the voice: Kokoro, a natural voice that runs on the phone =================== */
+const VOICE={tts:null,loading:null,src:null,el:null,q:null,speaking:false,last:0,lastTxt:"",timer:0,fallback:false};
+function vUI(){const el=$("aiVoiceState");if(!el)return;el.textContent=VOICE.tts?"Natural voice ready on this phone.":VOICE.loading?"Downloading the voice… (one time, about 90 MB)":S.ai&&S.ai.voiceGot?"Natural voice will load when needed.":"The natural voice is a one-time download of about 90 MB. Until then, the app uses your phone's built-in voice when it can.";
+  $("aiVoiceGet").hidden=!!VOICE.tts||!!VOICE.loading;}
+function voiceLoad(manual){if(VOICE.tts)return Promise.resolve(VOICE.tts);if(VOICE.loading)return VOICE.loading;
+  VOICE.loading=(async()=>{try{const mod=await import("https://cdn.jsdelivr.net/npm/kokoro-js@1.2.0/+esm");const tts=await mod.KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX",{dtype:"q8",device:"wasm"});
+      VOICE.tts=tts;aiS().voiceGot=1;save();if(manual)toast("Natural voice ready",1800);return tts;}
+    catch(e){if(manual)toast("Couldn't download the voice. Check your internet and try again.",3500);return null;}finally{VOICE.loading=null;vUI();}})();vUI();return VOICE.loading;}
+const voiceText=t=>String(t||"").replace(/\*\*?|__|`|#+ /g,"").replace(/\s*[•\-]\s+/g,". ").replace(/\s+/g," ").replace(/(\d+)–(\d+)/g,"$1 to $2").replace(/ms\b/g,"milliseconds").replace(/♯/g," sharp").replace(/♭/g," flat").replace(/[⇄→]/g," to ").trim();
+/* it only talks when you're not playing: never during a song, the trainers or a jam */
+function busyPlaying(){return (typeof TP!=="undefined"&&TP.playing&&TP.mode)||(typeof RT!=="undefined"&&RT.on)||(typeof P!=="undefined"&&P.playing)||(typeof JM!=="undefined"&&JM.on)||(typeof TR!=="undefined"&&!!TR.timer);}
+function voiceSay(text,o){o=o||{};const v=aiS().voice;if(!v.on&&!o.force)return;const t=voiceText(text);if(!t)return;
+  const talk=v.talk;if(!o.force&&!o.answer){if(talk==="quiet"&&!o.important)return;if(talk!=="chatty"&&o.mood==="good"&&!o.important&&Math.random()<.6)return;
+    if(t===VOICE.lastTxt&&Date.now()-VOICE.last<90000)return;if(Date.now()-VOICE.last<(talk==="chatty"?8000:talk==="normal"?20000:45000)&&!o.important)return;}
+  VOICE.q={t,at:Date.now(),o};clearInterval(VOICE.timer);VOICE.timer=setInterval(voicePump,300);voicePump();}
+function voicePump(){const q=VOICE.q;if(!q){clearInterval(VOICE.timer);return;}if(Date.now()-q.at>25000){VOICE.q=null;return;}if(VOICE.speaking)return;if(busyPlaying()&&!q.o.force)return;
+  VOICE.q=null;voiceSpeak(q.t);}
+async function voiceSpeak(t){VOICE.speaking=true;VOICE.last=Date.now();VOICE.lastTxt=t;let tts=VOICE.tts;if(!tts&&(S.ai&&S.ai.voiceGot))tts=await voiceLoad(false);
+  try{if(tts){const sents=t.match(/[^.!?]+[.!?]*/g)||[t];const c=ac();for(const sn of sents){if(!VOICE.speaking)break;const au=await tts.generate(sn.trim(),{voice:aiS().voice.name||"am_michael"});if(!VOICE.speaking)break;
+        const buf=c.createBuffer(1,au.audio.length,au.sampling_rate);buf.copyToChannel(au.audio,0);const s=c.createBufferSource();s.buffer=buf;const g=c.createGain();g.gain.value=.95;s.connect(g);g.connect(c.destination);VOICE.src=s;
+        await new Promise(res=>{s.onended=res;s.start();});}}
+    else if(window.speechSynthesis&&window.SpeechSynthesisUtterance){await new Promise(res=>{const u=new SpeechSynthesisUtterance(t);const male=speechSynthesis.getVoices().find(x=>/en[-_]US/i.test(x.lang)&&/male|guy|david|alex|daniel|fred|tom/i.test(x.name))||speechSynthesis.getVoices().find(x=>/^en/i.test(x.lang));
+        if(male)u.voice=male;u.rate=1.02;u.onend=res;u.onerror=res;speechSynthesis.speak(u);});}}
+  catch(e){}VOICE.speaking=false;VOICE.src=null;}
+function voiceStop(){VOICE.q=null;if(VOICE.speaking){VOICE.speaking=false;try{VOICE.src&&VOICE.src.stop();}catch(e){}try{window.speechSynthesis&&speechSynthesis.cancel();}catch(e){}}}
+/* you start playing → it stops talking */
+["tpMiniPlay","hwPlay","rtGo","jmGo","playBtn","tStart"].forEach(id=>{const e=$(id);if(e)e.addEventListener("click",voiceStop,true);});
+/* after a run: Gemini turns the numbers into one natural spoken tip */
+function aiRunTip(summary,pct){gem("tips",[{text:aiCtx()+"\nSong: "+(TP.tab?TP.tab.title:"")+", level "+DIFF_NAMES[diffLevel()]+", speed "+TP.speed+"x.\nWhat the app measured on that run: "+summary+
+  "\nGive ONE coaching tip to say out loud: at most 2 short sentences, specific to this run. If it went great, a short genuine compliment plus what to try next. No lists, no emojis."}],{system:AISYS,max:110,temp:.85,timeout:12000})
+  .then(t=>{if(!stack.includes("s-song"))return;$("tpStatus").textContent=t;voiceSay(t,{important:true,mood:pct>=85?"good":"tip"});})
+  .catch(e=>{voiceSay(summary,{important:true});});}
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
