@@ -418,7 +418,7 @@ input[type=range],.toggle input{accent-color:#fff}
   background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.035) 45%,rgba(255,255,255,.05));
   backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);
   border:1px solid rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 30px 60px rgba(0,0,0,.6)}
-.gin{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:20px;display:flex;flex-direction:column;gap:14px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.gin{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:20px;display:flex;flex-direction:column;gap:14px;overscroll-behavior-y:contain;overscroll-behavior-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .gin::-webkit-scrollbar{display:none}
 .gin>.card,.gin>.tools,.gin>#npCard,.gin>.tuner{background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:0!important;border-radius:0}
 .gin .tools>div:first-child{display:none}
@@ -4241,6 +4241,17 @@ function buildDeck(){const deck=document.createElement("div");deck.className="de
   [...$("v-profile").children].filter(c=>!c.matches("h1")).forEach(c=>put("me",c));
   /* the whole journey lives on its own screen now */
   const jb=$("journeyBody");jb.appendChild($("modules"));jb.appendChild(document.querySelector("#v-learn .jfoot"));
+  /* swipe anywhere on the card: a sideways swipe moves the pages, up and down still scrolls the card */
+  {let SW=null;const skip='.pcar,.mcar,input[type="range"],textarea,select,.fbscroll,.thscroll,.chiprow,canvas,.tzboard';
+    deck.addEventListener("touchstart",e=>{if(e.touches.length!==1||e.target.closest(skip)){SW=null;return;}const t=e.touches[0];SW={x:t.clientX,y:t.clientY,t:performance.now(),l:deck.scrollLeft,m:null,lx:t.clientX,lt:performance.now(),v:0};},{passive:true});
+    deck.addEventListener("touchmove",e=>{if(!SW)return;const t=e.touches[0];const dx=t.clientX-SW.x,dy=t.clientY-SW.y;
+      if(!SW.m){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;SW.m=Math.abs(dx)>Math.abs(dy)*.9?"h":"v";if(SW.m==="h"){deck.style.scrollSnapType="none";deck.classList.add("drag");}}
+      if(SW.m!=="h")return;e.preventDefault();const now=performance.now();SW.v=(t.clientX-SW.lx)/Math.max(1,now-SW.lt);SW.lx=t.clientX;SW.lt=now;
+      const w=deck.clientWidth,max=(PAGES.length-1)*w;let nl=SW.l-dx;if(nl<0)nl=nl/3;if(nl>max)nl=max+(nl-max)/3;deck.scrollLeft=nl;},{passive:false});
+    const end=()=>{if(!SW)return;const s0=SW;SW=null;if(s0.m!=="h")return;const w=deck.clientWidth;const from=Math.round(s0.l/w);let i=Math.round(deck.scrollLeft/w);
+      if(Math.abs(s0.v)>.35)i=from+(s0.v<0?1:-1);i=Math.max(0,Math.min(PAGES.length-1,Math.max(from-1,Math.min(from+1,i))));
+      deck.classList.remove("drag");deck.scrollTo({left:i*w,behavior:"smooth"});setTimeout(()=>{deck.style.scrollSnapType="";deckSettle();},420);};
+    deck.addEventListener("touchend",end);deck.addEventListener("touchcancel",end);}
   let tm=0,raf=0;deck.addEventListener("scroll",()=>{clearTimeout(tm);tm=setTimeout(deckSettle,90);if(!raf)raf=requestAnimationFrame(()=>{raf=0;deckParallax();});},{passive:true});
   idle(()=>PAGES.forEach(P=>pageRender(P.id)));
   window.addEventListener("resize",()=>{deck.scrollLeft=DECK.i*deck.clientWidth;});
