@@ -1085,8 +1085,8 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
   <div class="sbody">
     <div class="aihero"><div class="glow"></div><b>Your own teacher, free</b><span>Fretwork uses your personal Gemini key from Google. Everything runs on your free allowance, and your key stays on this phone.</span></div>
     <div class="blist" id="aiLinkBox"><h3>Link my Gemini</h3>
-      <ol class="aisteps"><li>In Chrome, open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with Google.</li><li>Tap <b>Create API key</b>, then copy it. It starts with <b>AIza</b>.</li><li>Paste it below and tap <b>Link</b>.</li></ol>
-      <input class="field" id="aiKey" type="password" placeholder="AIza…" autocapitalize="off" autocomplete="off" spellcheck="false">
+      <ol class="aisteps"><li>In Chrome, open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with Google.</li><li>Tap <b>Create API key</b>, then copy it. New keys start with <b>AQ.</b> (older ones start with <b>AIza</b>). Either works.</li><li>Paste it below and tap <b>Link</b>.</li></ol>
+      <input class="field" id="aiKey" type="password" placeholder="AQ.… or AIza…" autocapitalize="off" autocomplete="off" spellcheck="false">
       <button class="btn w" id="aiLinkBtn">Link</button>
       <div class="status" id="aiMsg"></div></div>
     <div class="blist" id="aiLinked" hidden><h3>Gemini is linked</h3><div class="small muted" id="aiWho"></div><button class="chip" id="aiUnlink">Unlink from this phone</button></div>
@@ -3927,7 +3927,7 @@ function aiPick(names){const ok=names.filter(n=>/gemini/.test(n)&&!/tts|image|li
   const lite=best(n=>/flash-lite/.test(n),"gemini-flash-lite-latest"),flash=best(n=>/flash/.test(n)&&!/lite/.test(n),"gemini-flash-latest");return {lite:lite||flash,flash:flash||lite};}
 async function aiLink(key){const msg=$("aiMsg");msg.classList.remove("good");msg.textContent="Checking your key…";
   try{let names=[],tok="";for(let i=0;i<4;i++){const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200"+(tok?"&pageToken="+tok:""),{headers:{"x-goog-api-key":key}});
-      if(!r.ok){msg.textContent=r.status===400||r.status===403?"Google didn't accept that key. Copy it again from AI Studio (it starts with AIza).":"Google said "+r.status+". Try again in a minute.";return;}
+      if(!r.ok){msg.textContent=r.status===400||r.status===401||r.status===403?"Google didn't accept that key. Copy it again from AI Studio. New keys start with AQ., older ones with AIza.":"Google said "+r.status+". Try again in a minute.";return;}
       const j=await r.json();(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes("generateContent")).forEach(m=>names.push(String(m.name).replace(/^models\//,"")));tok=j.nextPageToken;if(!tok)break;}
     const mods=aiPick(names);if(!mods.flash){msg.textContent="That key works, but no Gemini Flash model is available on it.";return;}
     const a=aiS();a.key=key;a.models=mods;a.linkedAt=Date.now();save();$("aiKey").value="";msg.classList.add("good");msg.textContent="Linked. Using "+mods.lite+" and "+mods.flash+".";aiUI();toast("Gemini linked",1800);}
@@ -3941,7 +3941,7 @@ async function gem(id,parts,o){o=o||{};const F=AIF.find(f=>f.id===id);if(!aiOn(i
   try{r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":a.key},body:JSON.stringify(body),signal:ctl.signal});}
   catch(e){throw new AIErr(e.name==="AbortError"?"Gemini took too long. Try again.":"Couldn't reach Gemini. Check your internet.","net");}finally{clearTimeout(tm);}
   if(r.status===429)throw new AIErr("Your free Gemini limit is used up for now. It resets soon, usually by tomorrow.","quota");
-  if(r.status===400||r.status===403){const t=await r.text().catch(()=>"");if(/API key|API_KEY|permission/i.test(t))throw new AIErr("Gemini didn't accept your key. Link it again in AI Teacher settings.","key");throw new AIErr("Gemini couldn't handle that request.","bad");}
+  if(r.status===400||r.status===401||r.status===403){const t=await r.text().catch(()=>"");if(r.status===401||/API key|API_KEY|permission|credential/i.test(t))throw new AIErr("Gemini didn't accept your key. Link it again in AI Teacher settings.","key");throw new AIErr("Gemini couldn't handle that request.","bad");}
   if(!r.ok)throw new AIErr("Gemini had a problem ("+r.status+"). Try again in a minute.","err");
   const j=await r.json();const txt=((j.candidates||[])[0]||{}).content;const out=txt&&txt.parts?txt.parts.map(p=>p.text||"").join("").trim():"";if(!out)throw new AIErr("Gemini didn't answer that one.","empty");aiUse(id,true);aiUI(true);
   if(o.json){const m=out.replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/,"");const s0=m.indexOf("{"),s1=m.lastIndexOf("}");try{return JSON.parse(m.slice(s0,s1+1));}catch(e){throw new AIErr("Gemini's answer came back garbled. Try again.","parse");}}return out;}
