@@ -586,6 +586,14 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 .tbtns{display:flex;gap:10px;justify-content:space-between}.tbtns button{border:0;border-radius:999px;padding:13px 22px;font:600 16px var(--sans)}
 .tback{background:rgba(255,255,255,.1);color:#fff}.tnext{background:#fff;color:#000;flex:1;max-width:220px;margin-left:auto}
 .tour.hero .tnext{max-width:none}
+
+/* rhythm trainer */
+.rpat{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.rslot{aspect-ratio:1/1.5;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:background .15s,transform .1s,border-color .15s}
+.rslot.off{background:rgba(255,255,255,.035)}.rslot .arr{font:700 30px var(--sans);line-height:1;color:#fff}.rslot .cnt{font:600 13px var(--sans);color:rgba(255,255,255,.5)}
+.rslot.now{border-color:#fff;transform:scale(1.06);box-shadow:0 0 16px rgba(255,255,255,.25)}
+.rslot.good{background:rgba(48,209,88,.45);border-color:#30D158}.rslot.ok{background:rgba(255,214,10,.35);border-color:#FFD60A}.rslot.bad{background:rgba(255,69,58,.35);border-color:#FF453A}
+.rlive{display:flex;justify-content:space-between;align-items:baseline}.rlive b{font:700 26px var(--sans)}
 </style>
 </head>
 <body>
@@ -694,6 +702,7 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
       <button class="tool" data-open="s-chord"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Guitar Chord Finder</button>
       <button class="tool" data-open="s-scales"><svg viewBox="0 0 24 24"><path d="M4 18l4-4 4 2 4-6 4-3"/><circle cx="4" cy="18" r="1"/><circle cx="20" cy="7" r="1"/></svg>Scales</button>
       <button class="tool" data-open="s-neck"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M8 7v10M13 7v10M18 7v10"/></svg>Fretboard</button>
+      <button class="tool" data-open="s-strum"><svg viewBox="0 0 24 24"><path d="M6 4v12M6 16l-3-3M6 16l3-3M18 20V8M18 8l-3 3M18 8l3 3"/></svg>Rhythm Trainer</button>
       <button class="tool" data-open="s-drill"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 9v4l2 2M9 3h6"/></svg>Chord Drill</button>
     </div>
   </div>
@@ -703,6 +712,12 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 <section class="view wrap" id="v-profile" hidden>
   <h1 class="title">Profile</h1>
   <div class="stats" id="stats"></div>
+  <div class="card pad" id="bkCard">
+    <b>Backup</b>
+    <div class="small muted">Keeps your songs, progress and settings safe if your phone breaks or the app gets deleted.</div>
+    <div class="tiny muted" id="bkWhen"></div>
+    <div class="row"><button class="btn" id="bkSave">Back up now</button><button class="btn ghost" id="bkRestore">Restore</button><label class="btn ghost small" for="bkFile" style="cursor:pointer">Restore from file</label><input type="file" id="bkFile" accept=".json,application/json" hidden></div>
+  </div>
   <div class="card pad tourcard" id="tourCard">
     <b>App tour</b>
     <div class="small muted">A quick walk through every page and button, in plain words.</div>
@@ -786,7 +801,7 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
     <div class="row" id="tpAct" style="justify-content:center"></div>
     <div class="panel">
       <div class="chiprow">
-        <button class="chip" id="tpViewChip" aria-pressed="true">Highway view</button><button class="chip" id="tpSpeed">1x</button>
+        <button class="chip" id="tpDiffChip">Level: Full song</button><button class="chip" id="tpAdaptChip" aria-pressed="true">Auto level</button><button class="chip" id="tpViewChip" aria-pressed="true">Highway view</button><button class="chip" id="tpSpeed">1x</button>
         <button class="chip" id="tpWaitChip" aria-pressed="false">Wait mode</button>
         <button class="chip" id="tpGuideChip" aria-pressed="true">Guide sound</button>
         <button class="chip" id="tpSecChip" aria-pressed="true" hidden>Section ✕</button>
@@ -845,6 +860,22 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
     <div class="row" style="justify-content:space-between"><div class="clock" id="tClock">1:00</div><div style="text-align:right"><div class="counter" id="tCount">0</div><div class="small muted" id="tBest">Best: none yet</div></div></div>
     <button class="btn cta" id="tStart">Start 60 seconds</button>
     <button class="btn ghost tapbtn" id="tTap" disabled>Clean change</button>
+  </div>
+</div></section>
+
+<section class="screen" id="s-strum" hidden><div class="wrap">
+  <header class="shead"><button class="circ" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="stitle"><div class="eyebrow">Tools</div><div class="big">Rhythm Trainer</div></div><span></span></header>
+  <div class="sbody">
+    <p class="muted" style="margin:0">Strum along with the click. With the mic on, every strum is checked: green is on time, yellow is close, red is off.</p>
+    <div class="chiprow" id="rtChips"></div>
+    <div class="rpat" id="rtPat"></div>
+    <div class="small muted" id="rtTip"></div>
+    <div class="rlive"><b id="rtLive">Ready</b><span class="small muted" id="rtBar"></span></div>
+    <label class="row" style="flex-wrap:nowrap"><span class="small" style="min-width:64px">Speed</span><input type="range" id="rtBpm" min="50" max="140" value="70"><span class="mono small" id="rtBpmOut">70 BPM</span></label>
+    <button class="btn cta" id="rtGo">Start</button>
+    <div class="row"><button class="chip" id="rtDrop" aria-pressed="false">Test my timing (clicks drop out)</button><button class="chip" id="rtCal">Calibrate</button></div>
+    <div class="status" id="rtSum">Tip: tap Calibrate once so the app knows your phone's sound delay.</div>
+    <div class="small muted" id="rtBest"></div>
   </div>
 </div></section>
 
@@ -2065,13 +2096,33 @@ function selectTab(id){if(typeof REC!=="undefined"&&REC.on)recStop();if(typeof l
   const trSel=$("tpTrack");trSel.innerHTML="";$("tpTrackWrap").hidden=t.kind!=="gp";
   if(t.kind==="gp")t.gp.tracks.forEach((tr,i)=>{const o=new Option((tr.name||"Track "+(i+1))+" · "+tr.ev.length+" notes",String(i));if(i===(t.ti||0))o.selected=true;trSel.add(o);});
   TP.bpm=Number.isFinite(t.bpm)&&t.bpm>0?t.bpm:TP.rh.bpm;TP.pos=0;TP.wi=0;TP.cur=-1;
-  applyTabPitch();$("tpTitle").textContent=t.title;$("tpDel").hidden=!!t.builtin;buildSheet();renderTabTune();nkPrep();
+  TP.full=TP.parsed.events;TP.parsed.events=simplifyEvents(TP.full,diffLevel());
+  applyTabPitch();$("tpTitle").textContent=t.title;$("tpDel").hidden=!!t.builtin;buildSheet();renderTabTune();nkPrep();diffUI();
   $("tpSeek").max=String(TP.rh.total);$("tpSeek").value="0";$("tpTimeB").textContent=fmtT(TP.rh.total);$("tpTimeA").textContent="0:00";
   $("tpBpm").value=String(TP.bpm);$("tpBpmOut").textContent=TP.bpm+" BPM";
   $("tpRhythmNote").textContent=TP.rh.exact?"Exact rhythm and tempo changes from the Guitar Pro file. Tempo here sets the starting speed.":TP.rh.bpmFound?"Tempo read from the tab.":"No tempo in this tab, so it starts at 90 BPM. Set it to match the song.";
   $("tpStatus").classList.remove("good");$("tpStatus").textContent=TP.parsed.events.length?TP.parsed.events.length+" notes · "+(TP.barBeats?TP.barBeats.length:Math.round(TP.rh.total/TP.rh.bpb))+" bars · "+TP.bpm+" BPM"+(TP.rh.exact?" · exact rhythm":""):"No tab lines found in this one.";}
+/* ---------- adaptive difficulty: songs start simple and fill in as you get better ---------- */
+const DIFF_NAMES=["","Easy","Medium","Hard","Full song"];
+const DIFF_INFO=["","One note every two beats, single notes only","One note per beat, up to two strings","Most notes, chords up to three strings","Every note as written"];
+function simplifyEvents(full,lvl){if(lvl>=4||!full.length)return full;const win=lvl===1?2:lvl===2?1:.5,maxN=lvl===1?1:lvl===2?2:3;const out=[];let lastWin=-1;
+  for(const e of full){const w=Math.floor(e.beat/win+1e-6);if(w===lastWin)continue;lastWin=w;
+    const low=e.notes.slice().sort((a,b)=>a.s-b.s).slice(0,maxN);const keep=e.notes.filter(n=>low.includes(n));
+    const nx=full.find(x=>x.beat>=(w+1)*win-1e-6);const dur=Math.max(e.dur,Math.min(win,(nx?nx.beat:e.beat+win)-e.beat));
+    out.push(Object.assign({},e,{dur:lvl<=2?dur:e.dur,notes:keep.map(n=>Object.assign({},n)),hit:false,miss:false}));}
+  return out;}
+function diffLevel(){const t=TP.tab;if(!t)return 4;if(Number.isFinite(t.diff))return t.diff;return myLevel()===0&&!t.builtin?2:4;}
+function diffApply(lvl,quiet){const t=TP.tab;if(!t||!TP.full)return;lvl=Math.max(1,Math.min(4,lvl));if(!t.builtin){t.diff=lvl;if(S.tabs.includes(t))save();}
+  TP.parsed.events=simplifyEvents(TP.full,lvl);applyTabPitch();buildSheet();nkPrep();HW.prep=null;TP.cur=-1;TP.done=Math.max(0,idxAt(curBeat()-1e-6)+1);diffUI();
+  if(!quiet)toast(DIFF_NAMES[lvl]+": "+DIFF_INFO[lvl],2200);}
+function diffUI(){const c=$("tpDiffChip");if(!c)return;const l=diffLevel();c.textContent="Level: "+DIFF_NAMES[l];$("tpAdaptChip").setAttribute("aria-pressed",S.adapt===false?"false":"true");}
+/* after each run with the mic on: add notes when you're nailing it, take some away when it's a struggle */
+function diffAdapt(pct){if(S.adapt===false||!TP.tab||TP.done<10)return "";const l=diffLevel();
+  if(pct>=85&&l<4){diffApply(l+1,true);return " You've got this level, so I added more notes: now "+DIFF_NAMES[l+1]+".";}
+  if(pct<45&&l>1){diffApply(l-1,true);return " That was a lot, so I simplified it to "+DIFF_NAMES[l-1]+". Nail this, and the notes come back.";}
+  return "";}
 function tabStr(si){return strShort(si,TP.tun);}
-function applyTabPitch(){TP.parsed.events.forEach(e=>e.notes.forEach(n=>{n.m=TP.tun[n.s]+n.fret+TP.capo;}));}
+function applyTabPitch(){(TP.full||[]).concat(TP.parsed.events).forEach(e=>e.notes.forEach(n=>{n.m=TP.tun[n.s]+n.fret+TP.capo;}));}
 function renderTabTune(){const name=T.tuningName(TP.tun);const same=T.sameTuning(TP.tun,OPEN);
   $("nkBadge").textContent=name+(TP.capo?" · Capo "+TP.capo:"");
   $("tpTuneWarn").hidden=same;if(!same){$("tpTuneWarnTxt").textContent="This tab is in "+name+" ("+T.tuningNotes(TP.tun)+"). Your guitar is set to "+T.tuningName(OPEN)+".";$("tpTuneMatch").textContent="Tune my guitar to "+name;}
@@ -2772,12 +2823,12 @@ function tpCoachWrongFrame(fr){if(!fr.stable||fr.note<0)return;const ev=TP.parse
 function tpCoachMiss(i){const e=TP.parsed.events[i];const b=barOf(e.beat);TP.missBar[b]=(TP.missBar[b]||0)+1;
   if(TP.wrong[i]!=null&&e.notes.length===1){const c=coachNote(e.notes[0],TP.wrong[i],TP.tun,"bar "+(b+1));tutorSay(c.text,{visual:c.visual,mood:"warn",key:"tpwrong",cooldown:5500});}}
 function tpCoachHit(i,now){const e=TP.parsed.events[i];const sched=TP.t0+e.beat*spb();TP.tim.push(now-.06-sched);}
-function tpCoachSummary(){if(!Mic.on||TP.done<8)return;const pct=Math.round(100*TP.hits/TP.done);let t="That run: "+TP.hits+" of "+TP.done+" notes ("+pct+"%).";
+function tpCoachSummary(){if(!Mic.on||TP.done<8)return;const pct=Math.round(100*TP.hits/TP.done);let t="That run: "+TP.hits+" of "+TP.done+" notes ("+pct+"%).";const adapted=diffAdapt(pct);
   if(TP.tim.length>=6){const avg=TP.tim.reduce((a,b)=>a+b,0)/TP.tim.length;if(avg<-.07)t+=" You're rushing a little, landing about "+Math.round(-avg*1000)+" ms early. Wait for the light to land.";else if(avg>.09)t+=" You're dragging a bit, about "+Math.round(avg*1000)+" ms late. Look one note ahead.";else t+=" Your timing is right on.";}
   const bars=Object.entries(TP.missBar).sort((a,b)=>b[1]-a[1]);const acts=[];
   if(bars.length&&pct<92){const b=+bars[0][0];const a=Math.max(0,b),z=a+1;t+=" Bars "+(a+1)+"–"+(z+1)+" gave you the most trouble.";acts.push({label:"Loop bars "+(a+1)+"–"+(z+1)+" at 75%",fn:()=>setSection(a,z,.75)});}
   else if(pct>=92&&TP.speed<1.25)acts.push({label:"Try it faster",fn:()=>{const i=SPEEDS.indexOf(TP.speed);TP.speed=SPEEDS[Math.min(SPEEDS.length-1,i+1)];$("tpSpeed").textContent=TP.speed+"x";tpPlay();}});
-  tutorSay(t,{mood:pct>=85?"good":"tip",actions:acts});tpCoachReset();}
+  tutorSay(t+adapted,{mood:pct>=85?"good":"tip",actions:acts});tpCoachReset();}
 function setSection(a,z,speed){const bl=barStarts();TP.secA=bl[a]||0;TP.secB=bl[z+1]!=null?bl[z+1]:TP.rh.total;TP.secLabel="Bars "+(a+1)+"–"+(z+1);if(speed){TP.speed=speed;$("tpSpeed").textContent=speed+"x";}
   $("tpSecChip").hidden=false;$("tpSecChip").textContent=TP.secLabel+" ✕";if(stack[stack.length-1]!=="s-song")openScreen("s-song");tpPause();TP.pos=TP.secA;tpPlay();}
 $("tpSecChip").addEventListener("click",()=>{TP.secA=TP.secB=null;$("tpSecChip").hidden=true;toast("Section loop off",1500);});
@@ -3184,6 +3235,77 @@ $("labConnect").addEventListener("click",labConnect);$("labRecBtn").addEventList
 $("labSend").addEventListener("click",labSend);$("labForget").addEventListener("click",()=>{S.lab=null;save();labUI();});
 document.querySelectorAll("#tpLabRow [data-lm]").forEach(b=>b.addEventListener("click",()=>labMode(b.dataset.lm)));
 setTimeout(()=>{labUI();if((S.labJobs||[]).some(j=>["queued","separating","transcribing"].includes(j.st)))labPollSoon();},0);
+$("tpDiffChip").addEventListener("click",()=>{if(!TP.tab)return;const l=diffLevel();diffApply(l>=4?1:l+1);});
+$("tpAdaptChip").addEventListener("click",()=>{S.adapt=S.adapt===false;save();diffUI();toast(S.adapt===false?"Level stays where you set it":"Level adjusts as you play (with the mic on)",2200);});
+/* ---------- backup: your songs, progress and settings, saved to your private lab (or a file) ---------- */
+function backupData(){const o=JSON.parse(JSON.stringify(S));if(o.lab)delete o.lab.token;delete o.sp;return JSON.stringify({app:"Fretwork",v:1,at:Date.now(),S:o});}
+async function backupSave(quiet){const data=backupData();const btn=$("bkSave");
+  if(labOk()){try{if(btn&&!quiet){btn.disabled=true;btn.textContent="Saving…";}const cur=await gh("/contents/backups/fretwork-backup.json");
+      await gh("/contents/backups/fretwork-backup.json",{method:"PUT",body:{message:"Fretwork backup",content:b64txt(data),sha:cur&&cur.sha||undefined}});
+      S.lastBackup=Date.now();save();bkUI();if(!quiet)toast("Backed up to your private lab",2200);}
+    catch(e){if(!quiet)toast("Couldn't back up: "+(e.message||e),4000);}if(btn){btn.disabled=false;btn.textContent="Back up now";}return;}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download="fretwork-backup-"+dkey(new Date())+".json";document.body.appendChild(a);a.click();a.remove();
+  S.lastBackup=Date.now();save();bkUI();toast("Backup file saved to your downloads",2500);}
+let bkArm=0;
+async function backupRestore(fromFile){let txt=null;
+  if(fromFile)txt=await fromFile.text();
+  else{if(!labOk()){toast("Connect your lab first (Find a tab page), or restore from a file.",3500);return;}
+    if(Date.now()-bkArm>4000){bkArm=Date.now();$("bkRestore").textContent="Tap again to replace this phone's data";setTimeout(()=>{$("bkRestore").textContent="Restore";},4000);return;}
+    try{const u=await gh("/contents/backups/fretwork-backup.json",{raw:true});if(!u){toast("No backup in your lab yet.",3000);return;}txt=new TextDecoder().decode(u);}catch(e){toast("Couldn't get the backup: "+(e.message||e),4000);return;}}
+  let o;try{o=JSON.parse(txt);}catch(e){toast("That isn't a Fretwork backup.",3000);return;}if(!o||o.app!=="Fretwork"||!o.S){toast("That isn't a Fretwork backup.",3000);return;}
+  const keepLab=S.lab,keepSp=S.sp;S=Object.assign({},o.S);if(keepLab)S.lab=keepLab;if(keepSp)S.sp=keepSp;["tabs","progs","days"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[];});
+  save();toast("Restored from "+new Date(o.at).toLocaleDateString()+". Reopening…",2000);setTimeout(()=>location.reload(),1200);}
+function bkUI(){const el=$("bkWhen");if(!el)return;el.textContent=(S.lastBackup?"Last backup: "+new Date(S.lastBackup).toLocaleString():"No backup yet.")+(labOk()?" Saved to your private lab, automatically once a day.":" Connect your lab on the Find a tab page for automatic backups.");}
+$("bkSave").addEventListener("click",()=>backupSave(false));$("bkRestore").addEventListener("click",()=>backupRestore(null));
+$("bkFile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";if(f)backupRestore(f);});
+setTimeout(()=>{bkUI();if(labOk()&&Date.now()-(S.lastBackup||0)>864e5)backupSave(true);},4000);
+/* ---------- rhythm trainer: strum patterns with timing feedback ---------- */
+const STRUMS=[
+  {id:"q",name:"Quarter notes",p:"D-D-D-D-",tip:"One down strum on every click. Count 1, 2, 3, 4 out loud."},
+  {id:"e",name:"Eighth notes",p:"DUDUDUDU",tip:"Down on the numbers, up on the \"ands\". Keep your arm moving down and up the whole time, like a pendulum."},
+  {id:"of",name:"Old Faithful",p:"D-DU-UDU",tip:"The strum in thousands of songs. Keep your arm swinging on the empty spots too, just miss the strings."},
+  {id:"pop",name:"Pop push",p:"D-DU-U-U",tip:"The ups land between the beats and push the song forward. Feel it, don't rush it."},
+  {id:"rock",name:"Rock drive",p:"DDDDDDDD",tip:"All downstrokes, eighth notes. This is how most punk and metal rhythm is played. Keep it tight and even."}];
+const RT={pat:STRUMS[0],bpm:70,on:false,t0:0,raf:0,timer:0,next:0,nextT:0,res:{},errs:[],extra:0,bars:8,lastE:0,eh:[],lastOn:0,cal:false,calErr:[],drop:false};
+const rtLat=()=>Number.isFinite(S.rhythmLat)?S.rhythmLat:.06;
+function rtBuild(){const box=$("rtPat");const p=RT.pat.p;box.innerHTML=[...p].map((c,i)=>'<div class="rslot'+(i%2?" off":"")+'" data-i="'+i+'"><span class="arr">'+(c==="D"?"↓":c==="U"?"↑":"")+'</span><span class="cnt">'+(i%2?"&":(i/2+1))+'</span></div>').join("");
+  $("rtTip").textContent=RT.pat.tip;$("rtBest").textContent=S.best["strum:"+RT.pat.id]?"Best on time: "+S.best["strum:"+RT.pat.id]+"%":"";
+  document.querySelectorAll("#rtChips .chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.id===RT.pat.id?"true":"false"));}
+function rtSlotT(k){return RT.t0+k*(30/RT.bpm);} /* k = eighth-note index from the start */
+function rtSched(){const c=ac(),e8=30/RT.bpm;while(RT.nextT<c.currentTime+.12){const k=RT.next;const beat=k/2;const bar=Math.floor(beat/4);
+    if(k%2===0){const cnt=k<0;const silent=RT.drop&&!cnt&&bar%2===1;if(!silent)click(RT.nextT,beat%4===0||cnt&&k===-8);}RT.next++;RT.nextT=RT.t0+RT.next*e8;}}
+function rtStart(cal){const c=ac();RT.cal=!!cal;RT.on=true;RT.res={};RT.errs=[];RT.extra=0;RT.calErr=[];RT.eh=[];const e8=30/RT.bpm;RT.t0=c.currentTime+.2+8*e8;RT.next=-8;RT.nextT=RT.t0-8*e8;
+  clearInterval(RT.timer);RT.timer=setInterval(rtSched,25);rtSched();$("rtGo").textContent="Stop";$("rtSum").textContent=cal?"Strum down once on every click…":"Count-in…";needMic().then(ok=>{if(!ok)rtStop();});
+  cancelAnimationFrame(RT.raf);RT.raf=requestAnimationFrame(rtFrame);document.querySelectorAll(".rslot").forEach(e=>e.className=e.className.replace(/ (good|ok|bad|now|miss)/g,""));}
+function rtStop(done){RT.on=false;clearInterval(RT.timer);cancelAnimationFrame(RT.raf);$("rtGo").textContent="Start";document.querySelectorAll(".rslot.now").forEach(e=>e.classList.remove("now"));
+  if(RT.cal){if(RT.calErr.length>=5){const m=RT.calErr.slice().sort((a,b)=>a-b)[Math.floor(RT.calErr.length/2)];S.rhythmLat=Math.max(0,Math.min(.4,rtLat()+m));save();$("rtSum").textContent="Calibrated. Your phone's delay is about "+Math.round(S.rhythmLat*1000)+" ms. Timing scores are now accurate.";}else $("rtSum").textContent="Didn't hear enough strums to calibrate. Strum a bit harder, close to the phone.";RT.cal=false;return;}
+  if(!done)return;rtSummary();}
+function rtSummary(){const want=Object.keys(RT.res).length,slots=rtWanted();const good=RT.errs.filter(e=>Math.abs(e)<=.05).length,ok=RT.errs.filter(e=>Math.abs(e)>.05&&Math.abs(e)<=.1).length;
+  const pct=slots?Math.round(100*good/slots):0;const avg=RT.errs.length?RT.errs.reduce((a,b)=>a+b,0)/RT.errs.length:0;
+  let t=pct+"% right on time · "+ok+" close · "+(slots-want)+" missed"+(RT.extra?" · "+RT.extra+" extra":"")+". ";
+  t+=RT.errs.length<4?"":Math.abs(avg)<.025?"Your timing is centered.":avg<0?"You're rushing about "+Math.round(-avg*1000)+" ms. Let the click lead.":"You're dragging about "+Math.round(avg*1000)+" ms. Get your arm moving a bit sooner.";
+  if(pct>=85&&RT.bpm<140)t+=" Great. Try "+(RT.bpm+10)+" BPM.";else if(pct<50&&RT.bpm>50)t+=" Try it slower, around "+(RT.bpm-10)+" BPM.";
+  $("rtSum").textContent=t;const k="strum:"+RT.pat.id;if(pct>(S.best[k]||0)){S.best[k]=pct;$("rtBest").textContent="New best on time: "+pct+"%";}save();logDay();}
+function rtWanted(){let n=0;for(let b=0;b<RT.bars;b++)for(let i=0;i<8;i++)if(RT.pat.p[i]!=="-")n++;return n;}
+function rtFrame(){if(!RT.on)return;const c=ac(),e8=30/RT.bpm;const k=Math.floor((c.currentTime-RT.t0)/e8+.5);const slot=((k%8)+8)%8;
+  document.querySelectorAll(".rslot").forEach((el,i)=>el.classList.toggle("now",k>=0&&i===slot));
+  if(!RT.cal&&k>=0)$("rtBar").textContent="Bar "+Math.min(RT.bars,Math.floor(k/8)+1)+" of "+RT.bars+(RT.drop?" · clicks drop out every other bar":"");else if(k<0)$("rtBar").textContent="Get ready: "+Math.ceil(-k/2);
+  /* onset: a sudden jump in loudness from the mic */
+  if(Mic.on&&Mic.an){const N=Mic.td.length;Mic.an.getFloatTimeDomainData(Mic.td);let e=0;for(let i=N-512;i<N;i++)e+=Mic.td[i]*Mic.td[i];e=Math.sqrt(e/512);
+    const base=RT.eh.length?RT.eh.reduce((a,b)=>a+b,0)/RT.eh.length:e;RT.eh.push(e);if(RT.eh.length>10)RT.eh.shift();
+    if(e>GATE*2.5&&e>base*2.2&&c.currentTime-RT.lastOn>.11){RT.lastOn=c.currentTime;rtOnset(c.currentTime-512/c.sampleRate/2-rtLat());}}
+  const end=RT.cal?8*2:RT.bars*8;if(k>=end+1){rtStop(true);return;}RT.raf=requestAnimationFrame(rtFrame);}
+function rtOnset(t){const e8=30/RT.bpm;const k=Math.round((t-RT.t0)/e8);if(k<0)return;const err=t-rtSlotT(k);
+  if(RT.cal){const kq=Math.round((t-RT.t0)/(2*e8));const eq=t-rtSlotT(kq*2);if(kq>=0&&Math.abs(eq)<.25)RT.calErr.push(eq);return;}if(k>=RT.bars*8)return;const i=k%8;const el=document.querySelector('.rslot[data-i="'+i+'"]');
+  if(RT.pat.p[i]==="-"||Math.abs(err)>.15){RT.extra++;if(el){el.classList.remove("good","ok","bad");void el.offsetWidth;el.classList.add("bad");}return;}
+  if(RT.res[k])return;RT.res[k]=err;RT.errs.push(err);const a=Math.abs(err);if(el){el.classList.remove("good","ok","bad");void el.offsetWidth;el.classList.add(a<=.05?"good":a<=.1?"ok":"bad");}
+  $("rtLive").textContent=a<=.05?"On time":err<0?Math.round(-err*1000)+" ms early":Math.round(err*1000)+" ms late";}
+$("rtChips").innerHTML=STRUMS.map(s=>'<button class="chip" data-id="'+s.id+'">'+esc(s.name)+'</button>').join("");
+document.querySelectorAll("#rtChips .chip").forEach(b=>b.addEventListener("click",()=>{if(RT.on)rtStop();RT.pat=STRUMS.find(s=>s.id===b.dataset.id);rtBuild();}));
+$("rtBpm").addEventListener("input",e=>{RT.bpm=+e.target.value;$("rtBpmOut").textContent=RT.bpm+" BPM";});
+$("rtGo").addEventListener("click",()=>RT.on?rtStop():rtStart(false));$("rtCal").addEventListener("click",()=>{if(RT.on)rtStop();RT.bpm=Math.max(60,Math.min(90,RT.bpm));rtStart(true);});
+$("rtDrop").addEventListener("click",()=>{RT.drop=!RT.drop;$("rtDrop").setAttribute("aria-pressed",RT.drop?"true":"false");});
+onClose["s-strum"]=()=>rtStop();rtBuild();
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
@@ -3288,6 +3410,7 @@ const TOUR_STEPS=[
   {song:1,s:"#tpMiniPlay",up:".pill",t:"Play and pause",b:"Play hears the song with the notes. The side buttons jump back or forward one bar."},
   {song:1,s:"#tpStrip",t:"The tab",b:"The classic tab view scrolls along with the highway. Lines are strings, numbers are frets."},
   {song:1,s:"#hwFullBtn",t:"Full screen",b:"Tap here, or turn your phone sideways, for the big full-screen highway. Tap the screen to show the buttons again."},
+  {song:1,s:"#tpDiffChip",up:"#tpAdaptChip",t:"Song level",b:"New to a song? Start on Easy: just the main notes. With the mic on and Auto level, Fretwork adds notes when you're nailing it and takes some away when it's a struggle."},
   {song:1,s:"#tpWaitChip",t:"Wait mode",b:"The song pauses on each note until you play it, so you can learn at your own pace. It needs the mic."},
   {song:1,s:"#tpSpeed",t:"Speed",b:"Slow the song down to learn tricky parts, then speed it back up."},
   {song:1,s:"#tpLoopSec",t:"Loop a section",b:"Repeats the part you're in, like the chorus or a solo, until you've got it."},
@@ -3297,9 +3420,10 @@ const TOUR_STEPS=[
   {p:"tune",s:".tzmeterwrap",t:"Tuner",b:"Tap the light to start listening, then pluck a string. The needle shows how far off you are. Green in the middle means in tune."},
   {p:"tune",s:"#tzBoard",t:"Hear each string",b:"Tap a string to hear the note it should be. It turns green when you match it."},
   {p:"tune",s:".tzpanel",t:"Other tunings",b:"Tap SELECT for tunings like Drop D or half step down. Fretwork warns you if a song needs a different one."},
-  {p:"tools",s:".pg[data-p='tools'] .gin",t:"Tools",b:"Chord charts, scales, the Song Builder for writing your own songs, and more practice tools."},
+  {p:"tools",s:".pg[data-p='tools'] .gin",t:"Tools",b:"Chord charts, scales, the Rhythm Trainer for strumming, Chord Drill for quick chord changes, the Ear Trainer, the Song Builder and more."},
   {p:"me",s:"#lvlRow",t:"Your level",b:"Set how much you can play, and Fretwork suggests songs that fit."},
   {p:"me",s:"#pMic",t:"Microphone",b:"Lets Fretwork hear you play. The sound is checked on your phone and never sent anywhere."},
+  {p:"me",s:"#bkCard",t:"Backup",b:"Keeps your songs and progress safe. With your lab connected, it backs up on its own once a day."},
   {p:"me",s:"#tourCard",t:"See this again",b:"Come back here any time to take the tour again."},
   {t:"You're ready to play",b:"Find a song you love, open it in Song Master, and start slow. Have fun with it.",hero:true,last:true}];
 const TOUR={i:-1,el:null,busy:false,openedSong:false};
