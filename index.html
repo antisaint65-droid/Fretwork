@@ -732,6 +732,19 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 .aifrow b{display:block;font:600 15.5px var(--sans)}.aifrow span{display:block;font-size:13px;color:rgba(255,255,255,.62);margin-top:2px;line-height:1.35}.aifrow em{display:block;font-style:normal;font-size:11.5px;color:rgba(100,210,255,.85);margin-top:5px}
 .tog{width:48px;height:28px;border-radius:999px;background:rgba(255,255,255,.18);position:relative;transition:background .2s}.tog::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
 .aifrow.on .tog{background:#30D158}.aifrow.on .tog::after{transform:translateX(20px)}
+
+/* ask your teacher */
+.askmain{display:grid;gap:12px}.asklog{display:grid;gap:10px}
+.abub{max-width:88%;padding:12px 15px;border-radius:20px;font-size:15.5px;line-height:1.5}.abub p{margin:0 0 6px}.abub p:last-child{margin:0}.abub ol,.abub ul{margin:4px 0;padding-left:20px}.abub li{margin:3px 0}
+.abub.u{justify-self:end;background:#fff;color:#000;border-bottom-right-radius:6px}
+.abub.t{justify-self:start;background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.12);border-bottom-left-radius:6px;color:#fff}
+.abub.err{border-color:rgba(255,69,58,.5)}
+.askrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;position:sticky;bottom:0;padding:16px 0 10px;background:linear-gradient(rgba(0,0,0,0),#000 35%);z-index:2}.asklog{padding-bottom:4px}.askrow textarea{resize:none;min-height:48px;max-height:120px}
+.dots3{display:flex;gap:5px}.dots3 i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.6);animation:dot3 1s infinite}.dots3 i:nth-child(2){animation-delay:.15s}.dots3 i:nth-child(3){animation-delay:.3s}
+@keyframes dot3{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+
+.factcard{display:grid;gap:8px;padding:14px 16px;border-radius:20px;background:linear-gradient(150deg,rgba(100,210,255,.14),rgba(191,90,242,.10));border:1px solid rgba(255,255,255,.14)}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}.fchips span{padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.1);font:600 13px var(--sans)}
 </style>
 </head>
 <body>
@@ -840,6 +853,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
       <button class="tool" data-open="s-chord"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Guitar Chord Finder</button>
       <button class="tool" data-open="s-scales"><svg viewBox="0 0 24 24"><path d="M4 18l4-4 4 2 4-6 4-3"/><circle cx="4" cy="18" r="1"/><circle cx="20" cy="7" r="1"/></svg>Scales</button>
       <button class="tool" data-open="s-neck"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M8 7v10M13 7v10M18 7v10"/></svg>Fretboard</button>
+      <button class="tool" data-open="s-ask"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></svg>Ask your teacher</button>
       <button class="tool" data-open="s-theory"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5M21 12h-5M12 21v-5M3 12h5"/></svg>Music Theory</button>
       <button class="tool" data-open="s-jam"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><circle cx="17" cy="9" r="3"/><path d="M12 15V4l8-2M5 21h6"/></svg>Jam Mode</button>
       <button class="tool" data-open="s-strum"><svg viewBox="0 0 24 24"><path d="M6 4v12M6 16l-3-3M6 16l3-3M18 20V8M18 8l-3 3M18 8l3 3"/></svg>Rhythm Trainer</button>
@@ -873,7 +887,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
     <b>AI Teacher</b>
     <div class="small muted">Link your own free Gemini key for spoken tips, answers to your questions, hand checks and more. It costs nothing, and you choose what it does.</div>
     <div class="tiny muted" id="aiState">Not linked yet</div>
-    <div class="row"><button class="btn" id="aiOpen">AI Teacher settings</button></div>
+    <div class="row"><button class="btn" id="aiOpen">AI Teacher settings</button><button class="btn g" id="weekBtn">Weekly check-in</button></div>
   </div>
   <div class="card pad" id="leftyCard">
     <b>Left-handed</b>
@@ -954,7 +968,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
     <div class="row" id="tpAct" style="justify-content:center"></div>
     <div class="panel">
       <div class="chiprow">
-        <button class="chip" id="tpDiffChip">Level: Full song</button><button class="chip" id="tpAdaptChip" aria-pressed="true">Auto level</button><button class="chip" id="tpViewChip" aria-pressed="true">Highway view</button><button class="chip" id="tpSpeed">1x</button>
+        <button class="chip" id="tpAsk">Ask teacher</button><button class="chip" id="tpDiffChip">Level: Full song</button><button class="chip" id="tpAdaptChip" aria-pressed="true">Auto level</button><button class="chip" id="tpViewChip" aria-pressed="true">Highway view</button><button class="chip" id="tpSpeed">1x</button>
         <button class="chip" id="tpWaitChip" aria-pressed="false">Wait mode</button>
         <button class="chip" id="tpGuideChip" aria-pressed="true">Guide sound</button>
         <button class="chip" id="tpSecChip" aria-pressed="true" hidden>Section ✕</button>
@@ -1083,6 +1097,18 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
       <div class="tiny muted" id="aiVoiceState"></div>
       <div class="tiny muted">It never talks while you're playing. It waits for a pause, stops the moment you press play, and won't repeat itself.</div></div>
     <div class="tiny muted">Privacy: on Google's free tier, Google may use what's sent to improve its products. Fretwork only sends short practice summaries and your questions. Photos and audio are sent only when you tap a button to send them.</div>
+  </div>
+</div></section>
+
+<section class="screen" id="s-ask" hidden><div class="wrap">
+  <header class="shead"><button class="circ" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="stitle"><div class="eyebrow">AI Teacher</div><div class="big">Ask your teacher</div></div><span></span></header>
+  <div class="sbody">
+    <div class="blist" id="askNeed" hidden><h3>Link your free Gemini first</h3><div class="small muted">Your teacher runs on your own free Gemini key. It takes about a minute to set up.</div><button class="btn w" id="askNeedGo">Set it up</button></div>
+    <div id="askMain" class="askmain">
+      <div class="asklog" id="askLog"></div>
+      <div class="chiprow" id="askSug"><button class="chip">Why does my chord buzz?</button><button class="chip">How do I change chords faster?</button><button class="chip">What should I practice today?</button><button class="chip" data-w="1">How did my week go?</button><button class="chip" data-g="Make me a 4-week plan to learn ">Plan for a song</button></div>
+      <div class="askrow"><textarea class="field" id="askIn" rows="1" placeholder="Ask anything about guitar…"></textarea><button class="btn w" id="askGo" aria-label="Send">Ask</button></div>
+    </div>
   </div>
 </div></section>
 
@@ -2299,13 +2325,25 @@ let msRun=0;
 function msRow(r,src){const row=msRow0(r,src);row._r=r;row._src=src;return row;}
 function msRow0(r,src){const row=gpRow(r.title,(r.artist||"")+" · "+src.name,"Get",async b=>{const msg=$("impMsg");msg.classList.remove("good");b.disabled=true;b.textContent="Getting…";msg.textContent="Downloading "+r.title+" from "+src.name+"…";
     try{let u8=r.info&&r.info.u8?r.info.u8:await r.get();if(u8[0]===0x50&&u8[1]===0x4b){let isGp7=false;try{await GP.parseSong(u8,inflateRaw);isGp7=true;}catch(e){}if(!isGp7){const z=await unzipGp(u8);if(!z)throw new Error("That download had no Guitar Pro file in it.");u8=z.u8;}}
-      await importGp(u8,r.title+" - "+(r.artist||""));b.textContent="Added ✓";if(TP.tab&&NP.targetKey){TP.tab.syncKey=NP.targetKey;save();}tuneHeadsUp();}
+      await importGp(u8,r.title+" - "+(r.artist||""));b.textContent="Added ✓";if(FWF&&FWF.tuning&&!/^standard/i.test(FWF.tuning))setTimeout(()=>toast("This song is played in "+FWF.tuning+(FWF.capo?", capo "+FWF.capo:"")+". Check the tuning before you start.",5000),1500);if(TP.tab&&NP.targetKey){TP.tab.syncKey=NP.targetKey;save();}tuneHeadsUp();}
     catch(e){b.disabled=false;b.textContent="Get";msg.textContent=(e&&/Guitar Pro|supported|damaged|ended early|no Guitar Pro/.test(e.message)?e.message:"Couldn't download it from "+src.name+". Try another result, or open it in your browser.");
       const a=document.createElement("a");a.className="btn ghost small";a.href=r.page;a.target="_blank";a.rel="noopener";a.textContent="Open on "+src.name;msg.appendChild(document.createElement("br"));msg.appendChild(a);}});return row;}
+/* ---------- song facts from Gemini + Google Search: key, tuning, capo, tempo, other names ---------- */
+let FWF=null;
+async function aiFacts(artist,title){if(!aiOn("facts")||!title)return null;const a=aiS();a.facts=a.facts||{};const k=songKey(title,artist);const c=a.facts[k];if(c&&Date.now()-c.at<60*864e5)return c;
+  const j=await gem("facts",[{text:'Look up the song "'+title+'" by "'+artist+'" on the web. How is it played on guitar in the original studio recording? Reply with ONLY this JSON, no other text: '+
+    '{"title":"official title","artist":"official artist name","alt_titles":["other names or spellings people use, up to 4"],"alt_artists":["other spellings of the artist, up to 3"],"tuning":"Standard, Half step down, Whole step down, Drop D, Drop C#, Open G, or another name","capo":0,"key":"like E minor","bpm":120,"duration_sec":240,"note":"one short useful fact for a guitarist learning it"}'}],{json:true,max:400,temp:.2,timeout:15000});
+  const f={title:String(j.title||title),artist:String(j.artist||artist),alt:(j.alt_titles||[]).map(String).filter(Boolean).slice(0,4),altA:(j.alt_artists||[]).map(String).filter(Boolean).slice(0,3),tuning:String(j.tuning||""),capo:+j.capo||0,key:String(j.key||""),bpm:+j.bpm||0,dur:+j.duration_sec||0,note:String(j.note||""),at:Date.now()};
+  a.facts[k]=f;const ks=Object.keys(a.facts);if(ks.length>150)delete a.facts[ks[0]];save();return f;}
+function factsCard(f){const d=document.createElement("div");d.className="factcard";
+  d.innerHTML='<div class="lbl">Song facts</div><div class="fchips">'+[f.key&&"Key "+f.key,f.tuning&&f.tuning,f.capo?"Capo "+f.capo:"No capo",f.bpm&&f.bpm+" BPM",f.dur&&fmtDur(f.dur)].filter(Boolean).map(x=>"<span>"+esc(x)+"</span>").join("")+'</div>'+(f.note?'<div class="small muted">'+esc(f.note)+'</div>':'');return d;}
+const tunNorm=s=>String(s||"").toLowerCase().replace(/e standard|standard tuning|e-standard/,"standard").replace(/\(.*\)/,"").replace(/[^a-z#]/g,"");
 async function fwSearch(){const ar=$("gpArtist").value.trim(),so=npClean($("gpSong").value.trim())||$("gpSong").value.trim();const box=$("gpResults");
   if(!ar){box.innerHTML='<div class="small muted">Type an artist name first.</div>';$("gpArtist").focus();return;}
-  gpAbort();const run=++msRun;box.innerHTML="";const t0=Date.now();
+  gpAbort();const run=++msRun;box.innerHTML="";const t0=Date.now();FWF=null;
   const head=document.createElement("div");head.className="small muted";box.appendChild(head);
+  const factsP=so&&typeof aiOn==="function"&&aiOn("facts")?aiFacts(ar,so).catch(()=>null):Promise.resolve(null);
+  factsP.then(f=>{if(f&&run===msRun){FWF=f;box.insertBefore(factsCard(f),head.nextSibling);}});
   const secs=SOURCES.map(src=>{const s=document.createElement("div");s.className="mssec";s.innerHTML='<div class="mshead"><b>'+esc(src.name)+'</b><span class="muted small">Searching…</span></div><div class="slist"></div>';box.appendChild(s);return {src,el:s,n:0,done:false};});
   const links=document.createElement("div");links.className="small muted";const q=encodeURIComponent((ar+" "+so).trim());
   links.innerHTML='Not there? Look on <a target="_blank" rel="noopener" href="https://www.ultimate-guitar.com/search.php?search_type=title&value='+q+'&type=500">Ultimate Guitar</a> (free account needed for Guitar Pro files), <a target="_blank" rel="noopener" href="https://www.songsterr.com/?pattern='+q+'">Songsterr</a> or <a target="_blank" rel="noopener" href="https://www.911tabs.com/search.php?search='+q+'&type=guitar_pro">911tabs</a>, then share the file to Fretwork.';
@@ -2317,11 +2355,20 @@ async function fwSearch(){const ar=$("gpArtist").value.trim(),so=npClean($("gpSo
     const st=S0.el.querySelector(".mshead span"),ul=S0.el.querySelector(".slist");
     st.textContent=err?"Couldn't reach it":list.length?list.length+" found":"Not found";if(!list.length)S0.el.classList.add("empty");
     list.slice(0,so?12:40).forEach(r=>ul.appendChild(msRow(r,S0.src)));}));
+  if(run!==msRun)return;
+  {const f=await Promise.race([factsP,sleep(7000).then(()=>null)]);if(run!==msRun)return;
+    if(f&&so){const seen=new Set([...box.querySelectorAll(".srow")].map(x=>x._r&&x._r.page).filter(Boolean));const exact=[...box.querySelectorAll(".srow .t")].some(t=>squash(t.textContent)===squash(so));
+      const titles=[...new Set([f.title,...f.alt].filter(x=>x&&squash(x)!==squash(so)))];const artists=[...new Set([f.artist,...f.altA].filter(x=>x&&squash(x)!==squash(ar)))];
+      if(!exact&&(titles.length||artists.length)){head.textContent="Trying other names for the song…";
+        await Promise.all(secs.map(async S0=>{const tries=[];artists.forEach(a2=>tries.push([a2,so]));(artists.length?artists:[ar]).concat([ar]).forEach(a2=>titles.forEach(t2=>tries.push([a2,t2])));
+          for(const [a2,t2] of tries.slice(0,4)){let list=[];try{list=await S0.src.find(a2,t2);}catch(e){continue;}if(run!==msRun)return;
+            list=songFilter(list.map(r=>Object.assign(r,{name:r.title,song:r.title})),t2).filter(r=>!seen.has(r.page));list.forEach(r=>seen.add(r.page));
+            const ul=S0.el.querySelector(".slist");list.slice(0,6).forEach(r=>{ul.appendChild(msRow(r,S0.src));S0.n++;});if(list.length){S0.el.classList.remove("empty");S0.el.querySelector(".mshead span").textContent=S0.n+" found";}}}));}}}
   if(run!==msRun)return;clearInterval(tick);$("gpSearchBtn").disabled=false;
   /* best matches first: sites with exact title hits move up */
   const sq=squash(so);secs.sort((a,b)=>{const ex=s=>so&&[...s.el.querySelectorAll(".srow .t")].some(t=>squash(t.textContent)===sq)?1:0;return (ex(b)-ex(a))||(b.n-a.n);}).forEach(s=>box.insertBefore(s.el,links));
   if(so){const rows=[...box.querySelectorAll(".srow")].filter(x=>x._r);rows.sort((a,b)=>matchScore(b._r.title,so,null,0)-matchScore(a._r.title,so,null,0));const top=rows.slice(0,10);
-    if(top.length){head.textContent="Checking which version fits best…";const target=NP.target&&NP.targetQ===squash(ar+so)?NP.target:0;
+    if(top.length){head.textContent="Checking which version fits best…";const target=(NP.target&&NP.targetQ===squash(ar+so)?NP.target:0)||(FWF&&FWF.dur)||0;
       await Promise.all(top.map(async row=>{try{const u8=await row._r.get();const info=await tabInfo(u8);row._r.info=info;if(info){row.querySelector(".m").textContent=(row._r.artist||"")+" · "+row._src.name+" · "+infoText(info);row._score=matchScore(row._r.title,so,info,target);}}catch(e){}}));
       if(run!==msRun)return;const best=top.filter(r=>r._score!=null).sort((a,b)=>b._score-a._score)[0];
       if(best){const bs=document.createElement("div");bs.className="mssec best";bs.innerHTML='<div class="mshead"><b>Best match</b><span class="muted small">'+(target?"Closest to the recording":"Most complete version")+'</span></div><div class="slist"></div>';bs.querySelector(".slist").appendChild(best);box.insertBefore(bs,head.nextSibling);}}}
@@ -3309,6 +3356,7 @@ function infoText(i){if(!i)return "";const full=i.cover>=.8?"Full song":i.cover>
   return [full,fmtDur(i.dur),i.std?"":i.tuning,i.capo?"Capo "+i.capo:"",i.diff?DIFFS[i.diff.level]:"",i.band?"Full band":"",i.part].filter(Boolean).join(" · ");}
 function matchScore(title,want,info,target){const a=squash(title),b=squash(want);let sc=a===b?3:a.startsWith(b)?2:a.includes(b)?1:0;if(/\b(live|acoustic|cover|bass|drum|backing)\b/i.test(title)&&!/\b(live|acoustic|cover)\b/i.test(want))sc-=.6;
   if(info){if(target>0&&info.dur>0)sc+=3*Math.max(0,1-Math.abs(info.dur-target)/25);if(info.part)sc+=.3;if(info.std)sc+=.25;if(info.tracks>1)sc+=.2;
+    if(FWF&&FWF.tuning&&info.tuning){if(tunNorm(FWF.tuning)===tunNorm(info.tuning)||(/standard/.test(tunNorm(FWF.tuning))&&info.std))sc+=.6;}
     if(info.cover!=null){sc+=1.4*info.cover+.8*(info.partCover==null?info.cover:info.partCover);if(info.notes<80)sc-=1;if(info.band)sc+=.4;if(info.gtrs>=2)sc+=.2;if(info.dur>0&&info.firstAt>Math.max(45,info.dur*.35))sc-=1;}}return sc;}
 /* ---------- Songs to learn ---------- */
 function learnFind(k){return (S.learn||[]).find(x=>x.k===k);}
@@ -3659,7 +3707,7 @@ function renderProgress(){const box=$("progBox");if(!box)return;const days=new S
   const songs=S.tabs.filter(t=>t.runs&&t.runs.length).sort((a,b)=>b.runs[b.runs.length-1][0]-a.runs[a.runs.length-1][0]).slice(0,5);
   if(songs.length){h+='<b style="margin-top:6px">Your songs</b>';songs.forEach(t=>{const r=t.runs.slice(-12);const W=110,H=30;const pts=r.map((x,i)=>(r.length===1?W/2:i*W/(r.length-1)).toFixed(1)+","+(H-2-(x[1]/100)*(H-4)).toFixed(1)).join(" ");
       const last=r[r.length-1],first=r[0];h+='<div class="sprog"><div><div class="t">'+esc(t.title.split(" · ")[0])+'</div><div class="small muted">'+DIFF_NAMES[last[2]||4]+' · last '+last[1]+'%'+(r.length>1?' · '+(last[1]>=first[1]?'up ':'down ')+Math.abs(last[1]-first[1])+' pts':'')+'</div></div><svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'"><polyline points="'+pts+'" fill="none" stroke="#64D2FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';});}
-  else h+='<div class="small muted">Play a song with the mic on, and your scores show up here.</div>';box.innerHTML=h;}
+  else h+='<div class="small muted">Play a song with the mic on, and your scores show up here.</div>';h+='<button class="btn g" id="weekBtn2">Weekly check-in with your teacher</button>';box.innerHTML=h;const wb=$("weekBtn2");if(wb)wb.addEventListener("click",()=>askWeekly());}
 /* ---------- Jam mode: a backing band you can shape by genre, key, tempo and sound ---------- */
 const PROGS={
   blues12:{n:"12-bar blues",c:["I7","I7","I7","I7","IV7","IV7","I7","I7","V7","IV7","I7","V7"]},
@@ -3947,6 +3995,30 @@ function aiRunTip(summary,pct){gem("tips",[{text:aiCtx()+"\nSong: "+(TP.tab?TP.t
   "\nGive ONE coaching tip to say out loud: at most 2 short sentences, specific to this run. If it went great, a short genuine compliment plus what to try next. No lists, no emojis."}],{system:AISYS,max:110,temp:.85,timeout:12000})
   .then(t=>{if(!stack.includes("s-song"))return;$("tpStatus").textContent=t;voiceSay(t,{important:true,mood:pct>=85?"good":"tip"});})
   .catch(e=>{voiceSay(summary,{important:true});});}
+/* ---------- Ask your teacher: a chat that knows your level, your lesson and your song ---------- */
+const ASK={hist:[],busy:false};
+function mdLite(t){const lines=esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").split(/\n+/);let h="",list=null;
+  lines.forEach(l=>{const m=/^\s*(?:(\d+)[.)]|[-*•])\s+(.*)$/.exec(l);if(m){const tag=m[1]?"ol":"ul";if(list!==tag){if(list)h+="</"+list+">";h+="<"+tag+">";list=tag;}h+="<li>"+m[2]+"</li>";}else{if(list){h+="</"+list+">";list=null;}if(l.trim())h+="<p>"+l+"</p>";}});
+  if(list)h+="</"+list+">";return h;}
+function askBubble(who,html,cls){const d=document.createElement("div");d.className="abub "+who+(cls?" "+cls:"");d.innerHTML=html;$("askLog").appendChild(d);d.scrollIntoView({block:"end",behavior:"smooth"});return d;}
+function askUI(){const ok=aiOn("ask");$("askNeed").hidden=ok;$("askMain").hidden=!ok;if(ok&&!$("askLog").children.length)askBubble("t","<p>Hey! Ask me anything about guitar: a chord that buzzes, how to practice, what to learn next, how to get a certain sound. I know where you are in the course.</p>");}
+function weekStats(){const d=new Date();const days=[];let mins=0;for(let i=6;i>=0;i--){const x=new Date(d);x.setDate(x.getDate()-i);const m=Math.round((S.mins||{})[dkey(x)]||0);mins+=m;days.push(m);}
+  const songs=S.tabs.filter(t=>t.runs&&t.runs.length).map(t=>{const r=t.runs.filter(x=>x[0]>Date.now()-7*864e5);return r.length?t.title.split(" · ")[0]+": "+r.length+" runs, best "+Math.max(...r.map(x=>x[1]))+"%, last "+r[r.length-1][1]+"%":"";}).filter(Boolean);
+  const chg=Object.entries(S.best).filter(([k])=>!/^strum:/.test(k)).map(([k,v])=>k.replace("-"," ⇄ ")+" "+v);const rh=Object.entries(S.best).filter(([k])=>/^strum:/.test(k)).map(([k,v])=>(STRUMS.find(s=>"strum:"+s.id===k)||{name:k}).name+" "+v+"% on time");
+  return "Last 7 days practice minutes (oldest to today): "+days.join(", ")+" (total "+mins+"). Songs: "+(songs.join("; ")||"none played with the mic")+". Best chord changes per minute: "+(chg.join(", ")||"none yet")+". Rhythm bests: "+(rh.join(", ")||"none yet")+".";}
+async function askSend(q,o){o=o||{};q=String(q||"").trim();if(!q||ASK.busy)return;$("askIn").value="";askBubble("u","<p>"+esc(o.show||q)+"</p>");const key=q.toLowerCase().replace(/\s+/g," ");
+  const a=aiS();a.cache=a.cache||{};const hit=!o.fresh&&a.cache[key]&&Date.now()-a.cache[key][1]<7*864e5;
+  if(hit){const ans=a.cache[key][0];askBubble("t",mdLite(ans));ASK.hist.push({role:"user",parts:[{text:q}]},{role:"model",parts:[{text:ans}]});voiceSay(ans,{answer:true});return;}
+  ASK.busy=true;const wait=askBubble("t","<p class=\"dots3\"><i></i><i></i><i></i></p>","wait");
+  try{const ans=await gem(o.feature||"ask",[{text:(o.extra?o.extra+"\n\n":"")+q}],{system:AISYS+" "+aiCtx()+" Keep answers under 130 words unless the student asks for more detail. Use a short numbered list for steps. You can suggest app tools by name: Rhythm Trainer, Chord Drill, Jam Mode, Music Theory, Song Master levels, Wait mode, Loop section.",history:ASK.hist.slice(-8),max:700,temp:.7});
+    wait.remove();askBubble("t",mdLite(ans));ASK.hist.push({role:"user",parts:[{text:q}]},{role:"model",parts:[{text:ans}]});if(!o.fresh){a.cache[key]=[ans,Date.now()];const ks=Object.keys(a.cache);if(ks.length>80)delete a.cache[ks[0]];save();}voiceSay(ans,{answer:true});}
+  catch(e){wait.remove();askBubble("t","<p>"+esc(aiErrMsg(e)||"Turn on Ask your teacher in AI Teacher settings.")+"</p>","err");}ASK.busy=false;}
+function askWeekly(){if(!aiOn("coach")){toast("Turn on Weekly check-in in AI Teacher settings.",3000);openScreen("s-ai");return;}openScreen("s-ask");
+  askSend("Give me my weekly check-in: what went well, what to focus on next week, and a simple plan for next week's practice.",{feature:"coach",fresh:true,extra:weekStats(),show:"How did my week go?"});}
+$("askGo").addEventListener("click",()=>askSend($("askIn").value));$("askIn").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();askSend($("askIn").value);}});
+document.querySelectorAll("#askSug button").forEach(b=>b.addEventListener("click",()=>{if(b.dataset.w){askWeekly();return;}if(b.dataset.g){$("askIn").value=b.dataset.g;$("askIn").focus();return;}askSend(b.textContent);}));
+$("askNeedGo").addEventListener("click",()=>openScreen("s-ai"));onOpen["s-ask"]=()=>askUI();onClose["s-ask"]=()=>voiceStop();
+$("tpAsk").addEventListener("click",()=>openScreen("s-ask"));$("weekBtn").addEventListener("click",askWeekly);
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
