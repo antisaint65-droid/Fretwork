@@ -745,6 +745,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 
 .factcard{display:grid;gap:8px;padding:14px 16px;border-radius:20px;background:linear-gradient(150deg,rgba(100,210,255,.14),rgba(191,90,242,.10));border:1px solid rgba(255,255,255,.14)}
 .fchips{display:flex;flex-wrap:wrap;gap:6px}.fchips span{padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.1);font:600 13px var(--sans)}
+.airow{gap:8px}.airow .btn{flex:1}
 </style>
 </head>
 <body>
@@ -788,7 +789,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
     <div class="slist" id="gpResults"></div>
     <details><summary class="small muted" style="cursor:pointer">Have a GProTab link?</summary><div class="row" style="flex-wrap:nowrap;margin-top:8px"><input class="field" id="gpLink" placeholder="https://gprotab.net/en/tabs/…" inputmode="url" autocapitalize="off"><button class="btn" id="gpGet">Get tab</button></div></details>
     <label class="small muted" for="impFile">Or open a file you already have (Guitar Pro, PDF or text)…</label>
-    <div class="row"><label class="btn" for="impFile" style="cursor:pointer">Choose file</label><input type="file" id="impFile" hidden></div>
+    <div class="row"><label class="btn" for="impFile" style="cursor:pointer">Choose file</label><input type="file" id="impFile" hidden><button class="btn g" id="tabPhoto">Photo of a tab</button></div>
     <p class="small muted" style="margin:0">Guitar Pro files (.gp, .gp5, .gp4, .gp3, .gpx) play with the song's exact rhythm and tempo. PDFs and text tabs work too.</p>
     <label class="small muted" for="impTitle">…or paste the tab text.</label>
     <input class="field" id="impTitle" placeholder="Title">
@@ -936,6 +937,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
     <div class="blist"><h3><svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-2px;stroke:currentColor;fill:none;stroke-width:2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg> Practice with Microphone</h3>
       <div class="meter" id="chMeter"><i></i></div><div class="vis" id="chStatusVis" hidden style="max-width:160px;margin:0 auto"></div><div class="status" id="chStatus" style="font-size:14px">Strum the chord and hold it. The bar fills when it sounds right.</div></div>
     <button class="btn cta" id="chPractice">Practice &amp; Detect</button>
+    <div class="row airow"><button class="btn g" id="chHand">Check my hand</button><button class="btn g" id="chListen">Listen to my chord</button></div>
   </div>
 </div></section>
 
@@ -968,7 +970,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
     <div class="row" id="tpAct" style="justify-content:center"></div>
     <div class="panel">
       <div class="chiprow">
-        <button class="chip" id="tpAsk">Ask teacher</button><button class="chip" id="tpDiffChip">Level: Full song</button><button class="chip" id="tpAdaptChip" aria-pressed="true">Auto level</button><button class="chip" id="tpViewChip" aria-pressed="true">Highway view</button><button class="chip" id="tpSpeed">1x</button>
+        <button class="chip" id="tpAsk">Ask teacher</button><button class="chip" id="tpListen">Listen to me</button><button class="chip" id="tpHand">Hand check</button><button class="chip" id="tpDiffChip">Level: Full song</button><button class="chip" id="tpAdaptChip" aria-pressed="true">Auto level</button><button class="chip" id="tpViewChip" aria-pressed="true">Highway view</button><button class="chip" id="tpSpeed">1x</button>
         <button class="chip" id="tpWaitChip" aria-pressed="false">Wait mode</button>
         <button class="chip" id="tpGuideChip" aria-pressed="true">Guide sound</button>
         <button class="chip" id="tpSecChip" aria-pressed="true" hidden>Section ✕</button>
@@ -4019,6 +4021,46 @@ $("askGo").addEventListener("click",()=>askSend($("askIn").value));$("askIn").ad
 document.querySelectorAll("#askSug button").forEach(b=>b.addEventListener("click",()=>{if(b.dataset.w){askWeekly();return;}if(b.dataset.g){$("askIn").value=b.dataset.g;$("askIn").focus();return;}askSend(b.textContent);}));
 $("askNeedGo").addEventListener("click",()=>openScreen("s-ai"));onOpen["s-ask"]=()=>askUI();onClose["s-ask"]=()=>voiceStop();
 $("tpAsk").addEventListener("click",()=>openScreen("s-ask"));$("weekBtn").addEventListener("click",askWeekly);
+/* ---------- photos and short recordings for Gemini (small, so they barely use your allowance) ---------- */
+function pickImage(){return new Promise(res=>{const i=document.createElement("input");i.type="file";i.accept="image/*";i.setAttribute("capture","environment");i.style.display="none";document.body.appendChild(i);
+  i.addEventListener("change",()=>{const f=i.files&&i.files[0];i.remove();res(f||null);});i.click();setTimeout(()=>{if(document.body.contains(i)&&!i.files.length){}},60000);});}
+async function imgPart(file,max){const url=URL.createObjectURL(file);try{const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=url;});
+    const sc=Math.min(1,(max||1024)/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    return {inline_data:{mime_type:"image/jpeg",data:c.toDataURL("image/jpeg",.82).split(",")[1]}};}finally{URL.revokeObjectURL(url);}}
+async function recordClip(sec,tick){if(!(await needMic()))return null;const types=["audio/webm;codecs=opus","audio/mp4","audio/ogg;codecs=opus","audio/webm"];const mt=types.find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||"";
+  const rec=new MediaRecorder(Mic.stream,mt?{mimeType:mt}:undefined);const chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};const done=new Promise(r=>rec.onstop=r);rec.start(500);
+  for(let k=sec;k>0;k--){if(tick)tick(k);await sleep(1000);}rec.stop();await done;return new Blob(chunks,{type:rec.mimeType||mt||"audio/webm"});}
+/* Gemini takes WAV: squeeze the clip to 16 kHz mono so it stays small */
+async function wavPart(blob,maxSec){const buf=await blob.arrayBuffer();const au=await ac().decodeAudioData(buf.slice(0));const sr=16000;const len=Math.min(au.duration,maxSec||45);
+  const off=new OfflineAudioContext(1,Math.ceil(len*sr),sr);const s=off.createBufferSource();s.buffer=au;s.connect(off.destination);s.start(0);const r=await off.startRendering();const d=r.getChannelData(0);
+  let pk=0;for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));const g=pk>0?.9/pk:1;const out=new DataView(new ArrayBuffer(44+d.length*2));const w=(o,str)=>{for(let i=0;i<str.length;i++)out.setUint8(o+i,str.charCodeAt(i));};
+  w(0,"RIFF");out.setUint32(4,36+d.length*2,true);w(8,"WAVE");w(12,"fmt ");out.setUint32(16,16,true);out.setUint16(20,1,true);out.setUint16(22,1,true);out.setUint32(24,sr,true);out.setUint32(28,sr*2,true);out.setUint16(32,2,true);out.setUint16(34,16,true);w(36,"data");out.setUint32(40,d.length*2,true);
+  for(let i=0;i<d.length;i++)out.setInt16(44+i*2,Math.max(-1,Math.min(1,d[i]*g))*32767,true);
+  const bytes=new Uint8Array(out.buffer);let bin="";for(let i=0;i<bytes.length;i+=32768)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+32768));return {inline_data:{mime_type:"audio/wav",data:btoa(bin)}};}
+function aiNeed(id){if(aiOn(id))return true;const F=AIF.find(f=>f.id===id);toast(aiLinked()?"Turn on "+F.n+" in AI Teacher settings.":"Link your free Gemini key in AI Teacher settings first.",3500);openScreen("s-ai");return false;}
+function aiSay(statusId,text,mood){const el=$(statusId);if(el){el.textContent=text;el.classList.toggle("good",mood==="good");}voiceSay(text,{answer:true});}
+/* hand and posture check */
+async function handCheck(where){if(!aiNeed("hand"))return;const st=where==="chord"?"chStatus":"tpStatus";const f=await pickImage();if(!f)return;$(st).textContent="Looking at your hand…";
+  let ctx="";if(where==="chord"&&CH.p){const vs=T.voicings(CH.p,OPEN);const v=vs[CH.vi]||vs[0];ctx="They are trying to play "+CH.p.name+". The shape: "+[...$("chFingers").children].map(x=>x.textContent).join("; ")+".";}
+  else if(TP.tab)ctx="They are working on the song \""+TP.tab.title+"\".";
+  try{const t=await gem("hand",[{text:aiCtx()+" "+ctx+(S.lefty?" The student is left-handed.":"")+"\nThis photo shows the student's hands on the guitar. Check the fretting hand (finger placement relative to the frets, arched fingers, thumb position, wrist angle) and, if visible, posture and picking hand. Say the single most important thing to fix and how, then one thing they're doing well. Max 3 short sentences, spoken style. If the photo doesn't show hands on a guitar clearly, say what to change about the photo."},await imgPart(f,1024)],{system:AISYS,max:200,temp:.5});
+    aiSay(st,t);}catch(e){$(st).textContent=aiErrMsg(e)||"Couldn't check that photo.";}}
+/* listen to me play */
+async function listenCheck(where){if(!aiNeed("listen"))return;const st=where==="chord"?"chStatus":"tpStatus";const sec=where==="chord"?6:12;
+  if(where!=="chord"&&TP.playing&&!REC.on)tpPause();
+  const blob=await recordClip(sec,k=>{$(st).textContent=(where==="chord"?"Strum "+(CH.p?CH.p.name:"the chord")+" now… ":"Play now… ")+k;});if(!blob)return;$(st).textContent="Listening back…";
+  let ctx="";if(where==="chord"&&CH.p)ctx="They are strumming "+CH.p.name+" ("+T.chordPcs(CH.p).map(x=>NOTES[x%12]).join(" ")+") over and over.";
+  else if(TP.tab&&TP.parsed){const ev=TP.parsed.events;const i=Math.max(0,idxAt(TP.pos));const near=ev.slice(i,i+16).map(e=>e.notes.map(n=>strShort(n.s,TP.tun)+n.fret).join("+")).join(" ");ctx="They are playing part of \""+TP.tab.title+"\" in "+T.tuningName(TP.tun)+". The notes around here (string+fret): "+near+".";}
+  try{const t=await gem("listen",[{text:aiCtx()+" "+ctx+"\nThis is a short recording of the student playing (there may be some background sound). Listen for buzzing, muted or dead strings, uneven strumming or timing, notes that don't ring, and pick noise. Say the one most important thing to fix and exactly how, then one thing that sounded good. Max 3 short sentences, spoken style. If you can't hear guitar clearly, say so and suggest holding the phone closer."},await wavPart(blob,sec+1)],{system:AISYS,max:200,temp:.5});
+    aiSay(st,t);}catch(e){$(st).textContent=aiErrMsg(e)||"Couldn't check that recording.";}}
+/* photo of a tab or chord sheet */
+async function tabPhoto(){if(!aiNeed("tabphoto"))return;const f=await pickImage();if(!f)return;const msg=$("impMsg");msg.classList.remove("good");msg.textContent="Reading the tab from your photo…";
+  try{const j=await gem("tabphoto",[{text:"This is a photo of a guitar tab or chord sheet. Transcribe it. Reply with ONLY JSON: {\"title\":\"song title if shown, else empty\",\"artist\":\"if shown\",\"tab\":\"the tablature as plain text, six lines per system starting e| B| G| D| A| E|, keep the spacing so notes line up, blank line between systems\",\"chords\":\"if it's a chord sheet: the chord names in order, one line per bar like | G | C | D | G |, no lyrics\"}. Never include lyrics."},await imgPart(f,1600)],{json:true,max:2500,temp:.1,timeout:60000});
+    const text=[j.tab,j.chords].filter(x=>x&&String(x).trim()).join("\n\n");if(!text){msg.textContent="Couldn't find a tab in that photo. Try a flatter, closer shot with good light.";return;}
+    $("impTitle").value=[j.title,j.artist].filter(Boolean).join(" · ")||"Tab from a photo";$("impText").value=text;if(!doImport())msg.textContent+=" You can fix the text in the box and tap Add pasted tab.";}
+  catch(e){msg.textContent=aiErrMsg(e)||"Couldn't read that photo.";}}
+$("chHand").addEventListener("click",()=>handCheck("chord"));$("chListen").addEventListener("click",()=>listenCheck("chord"));
+$("tpHand").addEventListener("click",()=>handCheck("song"));$("tpListen").addEventListener("click",()=>listenCheck("song"));$("tabPhoto").addEventListener("click",tabPhoto);
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
