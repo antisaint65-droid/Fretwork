@@ -559,6 +559,7 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 .inner{background:rgba(255,255,255,.05)!important}
 #nkBox.synced::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 3px #30D158;animation:syncfl .6s ease-out forwards}
 @keyframes syncfl{from{opacity:1}to{opacity:0}}
+.skipbtn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:4;border:0;border-radius:999px;padding:10px 18px;background:rgba(255,255,255,.92);color:#000;font:600 14px var(--sans);box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:nowrap}
 </style>
 </head>
 <body>
@@ -708,7 +709,7 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
     <div class="stitle"><div class="eyebrow">Song Master</div><div class="big" id="tpTitle">Ode to Joy</div></div>
     <button class="circ" id="tpMore" aria-label="Song settings"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></button></header>
   <div class="sbody">
-    <div class="neckwrap" id="nkBox"><canvas id="hwCv" aria-label="Note highway"></canvas><canvas id="neckCv" height="200"></canvas><div class="nkbadge" id="nkBadge">Standard</div><div class="nkhint" id="nkHint" hidden></div>
+    <div class="neckwrap" id="nkBox"><canvas id="hwCv" aria-label="Note highway"></canvas><canvas id="neckCv" height="200"></canvas><div class="nkbadge" id="nkBadge">Standard</div><div class="nkhint" id="nkHint" hidden></div><button class="skipbtn" id="tpSkip" hidden></button>
        <button class="hwfull" id="hwFullBtn" aria-label="Full screen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
        <div class="hwhud" id="hwHud">
          <div class="hwtop"><div class="hwt" id="hwTitle"></div><span class="hwscore" id="hwScore" hidden></span>
@@ -1457,6 +1458,9 @@ let S={done:{},best:{},days:[],tabs:[],progs:[],vol:0.85};
 try{const r=localStorage.getItem("fretwork.v1");if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
 ["tabs","progs","days"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[];});
 if(!Number.isFinite(S.vol))S.vol=0.85;
+/* older saves: if the chosen part stays silent for a long stretch (a solo-only lead track), switch to the main guitar part */
+S.tabs.forEach(t=>{try{if(t.kind!=="gp"||t.tiPicked||!t.gp||!t.gp.tracks||t.gp.tracks.length<2)return;t.tiPicked=1;const cur=t.gp.tracks[t.ti||0];const p=pickTrack(t.gp.tracks);if(p===(t.ti||0)||!cur||!cur.ev||!cur.ev.length)return;
+  const late=cur.ev[0][0]/Math.max(1,cur.total||1);const pe=t.gp.tracks[p].ev;if(late>.12&&pe&&pe.length&&pe[0][0]<cur.ev[0][0]){t.ti=p;delete t.tuning;delete t.capo;delete t.bpm;}}catch(e){}});
 if(Array.isArray(S.tuning)&&S.tuning.length===6&&S.tuning.every(n=>Number.isFinite(n)))OPEN=S.tuning.slice();
 function save(){try{localStorage.setItem("fretwork.v1",JSON.stringify(S));}catch(e){toast("Couldn't save. Your browser storage may be full or blocked.");}}
 const dkey=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -1957,8 +1961,8 @@ function looksGp(u8,name){if(/\.(gp|gp3|gp4|gp5|gpx)$/i.test(name||""))return tr
 async function importGp(u8,name){const msg=$("impMsg");const song=await GP.parseSong(u8,inflateRaw);const fw=GP.toFretwork(song);
   if(!fw.tracks.length){msg.textContent="This Guitar Pro file has no 6-string guitar tracks with notes. Bass, drum and 7-string tracks aren't supported yet.";return;}
   const title=(fw.title||niceTitle(name)||"Guitar Pro song")+(fw.artist?" · "+fw.artist:"");
-  let ti=fw.tracks.findIndex(t=>!/bass|drum|key|piano|organ|synth|vocal|voice|string ens/i.test(t.name));if(ti<0)ti=0;
-  const id="g"+Date.now();S.tabs.push({id,title,kind:"gp",gp:fw,ti});save();renderSongLists();
+  const ti=pickTrack(fw.tracks);
+  const id="g"+Date.now();S.tabs.push({id,title,kind:"gp",gp:fw,ti,tiPicked:1});save();renderSongLists();
   msg.classList.add("good");msg.textContent="Added "+title+": "+fw.tracks.length+" guitar track"+(fw.tracks.length>1?"s":"")+" with exact rhythm"+(fw.skipped?" ("+fw.skipped+" other tracks skipped)":"")+".";openSong(id);}
 async function importBlob(blob,name){const msg=$("impMsg");msg.classList.remove("good");closeAllScreens();show("songs");setTimeout(()=>$("importSec").scrollIntoView({behavior:"smooth"}),50);msg.textContent="Reading "+(name||"file")+"…";
   try{let text;const isPdf=/pdf/i.test(blob.type||"")||/\.pdf$/i.test(name||"");
@@ -2019,7 +2023,7 @@ function renderTabTune(){const name=T.tuningName(TP.tun);const same=T.sameTuning
   $("tpCapo").value=String(TP.capo);}
 function saveTabProp(){if(TP.tab&&!TP.tab.builtin){const t=S.tabs.find(x=>x.id===TP.tab.id);if(t){t.tuning=TP.tun.slice();t.capo=TP.capo;t.bpm=TP.bpm;save();}}}
 (function(){const c=$("tpCapo");for(let i=0;i<=12;i++)c.add(new Option(i?"Capo "+i:"No capo",String(i)));})();
-$("tpTrack").addEventListener("change",e=>{const t=TP.tab;if(!t||t.kind!=="gp")return;const st=S.tabs.find(x=>x.id===t.id);if(st){st.ti=+e.target.value;delete st.tuning;delete st.capo;delete st.bpm;save();}closeSheet();selectTab(t.id);nkPrep();renderSongLists();});
+$("tpTrack").addEventListener("change",e=>{const t=TP.tab;if(!t||t.kind!=="gp")return;const st=S.tabs.find(x=>x.id===t.id);if(st){st.ti=+e.target.value;st.tiPicked=1;delete st.tuning;delete st.capo;delete st.bpm;save();}closeSheet();selectTab(t.id);nkPrep();renderSongLists();});
 $("tpTunSel").addEventListener("change",e=>{const v=e.target.value;if(v[0]==="p"){tpStop();TP.tun=T.TUN_PRESETS[+v.slice(1)].tun.slice();saveTabProp();applyTabPitch();buildSheet();renderTabTune();nkPrep();}});
 $("tpCapo").addEventListener("change",e=>{tpStop();TP.capo=+e.target.value;saveTabProp();applyTabPitch();renderTabTune();});
 $("tpBpm").addEventListener("input",e=>{const nb=+e.target.value;$("tpBpmOut").textContent=nb+" BPM";if(TP.playing){const b=curBeat();TP.bpm=nb;TP.t0=ctx.currentTime-b*spb();}else TP.bpm=nb;$("tpTimeB").textContent=fmtT(TP.rh.total);});
@@ -2123,11 +2127,15 @@ function nkDraw(){if(!NK.base||!TP.parsed)return;const g=NK.g,dpr=NK.dpr,ev=TP.p
   else{const playingNow=(TP.mode==="play"&&rem!=null&&rem>0);cur.forEach(p=>{if(playingNow)nkRing(g,p.s,p.x,rem,now);
       const pulse=TP.mode==="wait"?.75+.25*Math.sin(now/180):1;nkOrb(g,p.x,p.y,p.f,TP.mode==="play"?rem:null,pulse);});}}
 // frame loop while the song screen is open
+/* long silence before the next guitar note: offer to skip ahead */
+function skipUI(ev,b){const el=$("tpSkip");if(!el)return;let show=false,nb=0;if(ev.length&&TP.mode!=="wait"){const i=idxAt(b)+1;if(i<ev.length){nb=ev[i].beat;const prevEnd=i>0?ev[i-1].beat+ev[i-1].dur:-1e9;show=nb-Math.max(b,0)>8&&(nb-Math.max(b,0))*spb()>7&&(b>prevEnd||i===0);}}
+  if(!show){if(!el.hidden)el.hidden=true;return;}const sec=Math.round((nb-b)*spb());const txt="Guitar starts in "+(sec>=60?fmtDur(sec):sec+" s")+" · Skip ›";if(el.textContent!==txt)el.textContent=txt;el.dataset.b=String(nb);if(el.hidden)el.hidden=false;}
 function tpFrame(){if($("s-song").hidden){TP.raf=0;return;}if(REC.on)recFrame();nkLayout();const ev=TP.parsed?TP.parsed.events:[];let b=curBeat();
   if(!REC.on&&TP.playing&&b>TP.rh.total+.25){tpCoachSummary();if(TP.loop){tpPause();TP.pos=0;tpPlay();b=curBeat();}else{const h=TP.hits,d=TP.done;tpPause();TP.pos=0;b=0;
       $("tpStatus").textContent=Mic.on&&d?"Done: "+h+" of "+d+" notes hit ("+Math.round(100*h/d)+"%).":"Finished. Press play to go again.";}}
   if(TP.playing){const s=spb(),now=ctx.currentTime;for(let i=TP.done;i<ev.length;i++){const dt=TP.t0+ev[i].beat*s-now;if(dt>-.4)break;if(Mic.on&&!ev[i].hit){ev[i].miss=true;evCls(i,"miss",true);tpCoachMiss(i);}TP.done=i+1;}
     if(!REC.on&&TP.secB!=null&&b>=TP.secB){tpCoachSummary();tpPause();TP.pos=TP.secA;tpPlay();b=curBeat();}}
+  skipUI(ev,b);
   const ci=TP.mode==="wait"?TP.wi:(b>=0?idxAt(b):-1);const showCur=ci>=0&&ci<ev.length&&(TP.mode==="wait"||(b<=ev[ci].beat+ev[ci].dur));
   if(TP.cur!==(showCur?ci:-1)){if(TP.cur>=0)evCls(TP.cur,"cur",false);TP.cur=showCur?ci:-1;if(TP.cur>=0)evCls(TP.cur,"cur",true);}
   const viewBeat=TP.mode==="wait"&&ev[TP.wi]?ev[TP.wi].beat:Math.max(visBeat(),ev.length?Math.min(0,ev[0].beat):0);
@@ -2865,7 +2873,11 @@ const myLevel=()=>S.level!=null?S.level:(LESSONS.filter((_,i)=>S.done[i]).length
 const DIFFC=new Map();
 function tabDiffFor(t){if(!t||t.kind!=="gp")return null;if(DIFFC.has(t.id))return DIFFC.get(t.id);const d=tabDifficulty(t.gp.tracks[t.ti||0]||t.gp.tracks[0]);DIFFC.set(t.id,d);return d;}
 /* ---------- look inside a downloaded file: length, tuning, part, difficulty ---------- */
-const pickTrack=tracks=>{let ti=tracks.findIndex(t=>/lead|solo/i.test(t.name)&&!/bass/i.test(t.name));if(ti<0)ti=tracks.findIndex(t=>!/bass|drum|key|piano|organ|synth|vocal|voice|string ens/i.test(t.name));return ti<0?0:ti;};
+/* pick the guitar part to show: the one that plays the most of the song, starting early (not a solo-only lead track) */
+function pickTrack(tracks){if(!tracks||!tracks.length)return 0;const bad=/bass|drum|key|piano|organ|synth|vocal|voice|string ens/i;let idx=tracks.map((t,i)=>i).filter(i=>!bad.test(tracks[i].name||""));if(!idx.length)idx=tracks.map((t,i)=>i);
+  const maxN=Math.max(1,...idx.map(i=>(tracks[i].ev||[]).length));let best=idx[0],bs=-1e9;
+  idx.forEach(i=>{const t=tracks[i],ev=t.ev||[];if(!ev.length)return;const tot=Math.max(1,t.total||ev[ev.length-1][0]+4);const first=ev[0][0]/tot;const nm=t.name||"";
+    const sc=ev.length/maxN-1.6*first+(/rhythm|hetfield|main|gtr ?1|guitar ?1\b/i.test(nm)?.15:0)-(/lead|solo/i.test(nm)?.1:0)-(/acoustic|clean/i.test(nm)?.05:0);if(sc>bs){bs=sc;best=i;}});return best;}
 async function tabInfo(u8){if(u8[0]===0x50&&u8[1]===0x4b){let gp7=false;try{await GP.parseSong(u8,inflateRaw);gp7=true;}catch(e){}if(!gp7){const z=await unzipGp(u8);if(!z)return null;u8=z.u8;}}
   let fw;try{fw=GP.toFretwork(await GP.parseSong(u8,inflateRaw));}catch(e){return null;}if(!fw.tracks.length)return null;const ti=pickTrack(fw.tracks);const tr=fw.tracks[ti];
   return {u8,ti,dur:tr.total*60/(tr.bpm||120),tuning:T.tuningName(tr.tuning),std:T.sameTuning(tr.tuning,STD),capo:tr.capo||0,part:/lead|solo/i.test(tr.name)?"Lead":/rhythm/i.test(tr.name)?"Rhythm":"",tracks:fw.tracks.length,diff:tabDifficulty(tr)};}
@@ -3022,6 +3034,7 @@ $("tpRecTap").addEventListener("click",recTapFirst);$("tpRecAuto").addEventListe
 $("tpRecReset").addEventListener("click",recReset);$("tpRecFollow").addEventListener("click",recFollowToggle);
 $("hwRecE").addEventListener("click",()=>{recNudge(-.1);hwHudShow();});$("hwRecL").addEventListener("click",()=>{recNudge(.1);hwHudShow();});
 {let lastTap=0;$("hwCv").addEventListener("pointerdown",()=>{const n=performance.now();if(REC.on&&n-lastTap<350){recTapHere();lastTap=0;}else lastTap=n;});}
+$("tpSkip").addEventListener("click",()=>{const nb=+$("tpSkip").dataset.b;if(!Number.isFinite(nb))return;const bpb=(TP.rh&&TP.rh.bpb)||4;tpRestartAt(Math.max(0,nb-bpb));if(!TP.playing&&!REC.on)tpPlay();});
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
