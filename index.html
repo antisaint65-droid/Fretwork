@@ -2506,7 +2506,7 @@ function ytBar(){let b=$("ytBar");if(!b){b=document.createElement("div");b.id="y
 function ytBarHide(){clearInterval(YT.poll);YT.poll=0;document.body.classList.remove("ytrec");const b=$("ytBar");if(b)b.hidden=true;}
 function ytTick(){const b=$("ytBar");if(!b||!YT.on)return;let st={};try{st=JSON.parse(NATIVE.recStatus()||"{}");}catch(e){}const s=YT.s||{};
   if(st.state==="rec"||st.state==="save")YT.seen=true;
-  const tot=s.dur?" / "+fmtDur(s.dur):"";const txt=st.state==="save"?"Saving the song…":st.state==="rec"?(st.note==="song"?"Recording the song · ":st.note==="sound"?"Hearing sound · ":"Waiting for the video to play · ")+fmtDur((st.ms||0)/1000)+tot:YT.seen?"Finishing…":"Tap Start now to begin";
+  const tot=s.dur?" / "+fmtDur(s.dur):"";const txt=st.state==="save"?"Saving the song…":st.state==="rec"?(st.note==="song"?"Recording the song · ":st.note==="sound"?"Hearing sound · ":"Waiting for the video to play · ")+fmtDur((st.ms||0)/1000)+tot:YT.seen?"Finishing…":"Tap Share screen (or Start now) to begin";
   b.querySelector(".yts").textContent=txt;b.querySelector(".ytlvl i").style.width=Math.min(100,Math.round(Math.sqrt(st.level||0)*260))+"%";
   $("ytStop").hidden=st.state!=="rec";$("ytOpen").hidden=st.state!=="rec"||document.visibilityState!=="visible";
   if(YT.seen&&st.state==="idle"&&!YT.handling)setTimeout(()=>window.fretworkRecDone(),300);}
@@ -2514,7 +2514,7 @@ window.fretworkRecDone=async()=>{if(!NATIVE||YT.handling)return;let r=null;try{r
   const P=S.ytPending;const s=YT.s||(P&&P.s)||null;if(!r){let st={};try{st=JSON.parse(NATIVE.recStatus()||"{}");}catch(e){}if(st.state==="idle"&&YT.seen){YT.on=false;ytBarHide();}return;}
   YT.handling=true;YT.on=false;ytBarHide();
   try{try{NATIVE.recClear();}catch(e){}S.ytPending=null;save();
-    if(!r.ok){let tr="";try{tr=NATIVE.recTrace?NATIVE.recTrace():"";}catch(e){}labReport("recording","error: "+r.err+"\n"+navigator.userAgent+"\n"+tr);const m={denied:"Android needs your OK to record. Tap Full tab again and choose Start now.",mic:"Android counts recording the phone's own sound as using the mic, so Fretwork needs that permission. Tap Full tab again and allow it.",silent:"Fretwork couldn't hear YouTube. If the video opened in the YouTube app instead of the panel, try again. Or use Other ways to add a tab."}[r.err]||r.err||"The recording didn't work.";toast(m,7000);return;}
+    if(!r.ok){let tr="";try{tr=NATIVE.recTrace?NATIVE.recTrace():"";}catch(e){}labReport("recording","error: "+r.err+"\n"+navigator.userAgent+"\n"+tr);const m={denied:"Android needs your OK to record. Tap Full tab again and choose Share screen.",mic:"Android counts recording the phone's own sound as using the mic, so Fretwork needs that permission. Tap Full tab again and allow it.",silent:"Fretwork couldn't hear YouTube. If the video opened in the YouTube app instead of the panel, try again. Or use Other ways to add a tab."}[r.err]||r.err||"The recording didn't work.";toast(m,7000);return;}
     const res=await fetch("/__rec/latest.m4a?t="+(r.at||Date.now()),{cache:"no-store"});if(!res.ok)throw new Error("the recording wasn't saved");const blob=await res.blob();if(blob.size<20000)throw new Error("the recording came out empty");
     LAB.blob=new Blob([blob],{type:"audio/mp4"});LAB.ext="m4a";LAB.name="YouTube recording · "+fmtDur((r.ms||0)/1000);LAB.img=s&&(s.img||s.thumb)||"";
     if(s){$("labTitle").value=npClean(s.title)||s.title;$("labArtist").value=npMainArtist(s.artist||"");}
