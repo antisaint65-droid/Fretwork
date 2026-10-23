@@ -560,6 +560,7 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 #nkBox.synced::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 3px #30D158;animation:syncfl .6s ease-out forwards}
 @keyframes syncfl{from{opacity:1}to{opacity:0}}
 .skipbtn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:4;border:0;border-radius:999px;padding:10px 18px;background:rgba(255,255,255,.92);color:#000;font:600 14px var(--sans);box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:nowrap}
+#labRecBtn.rec{background:#FF453A;color:#fff}
 </style>
 </head>
 <body>
@@ -610,6 +611,28 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
     <textarea class="field" id="impText" placeholder="e|-----0---3---|&#10;B|---1---0-----|&#10;G|-2-----------|&#10;D|-------------|&#10;A|-------------|&#10;E|-------------|"></textarea>
     <div class="row"><button class="btn ghost" id="impBtn">Add pasted tab</button></div>
     <div class="status" id="impMsg"></div>
+  </div>
+  <div class="card pad" id="labSec">
+    <h2 class="h2">Make a tab from a recording</h2>
+    <p class="small muted" style="margin:0">Pulls the guitar out of a song and writes a draft Guitar Pro tab, using free computers on your private GitHub. Takes about 5 to 10 minutes per song. The draft gets you most of the way; fix notes as you learn it.</p>
+    <div id="labBody">
+      <div id="labSetup">
+        <label class="small muted" for="labToken">Paste the key you made on GitHub (starts with github_pat_). It only works for your private lab repo.</label>
+        <input class="field" id="labToken" type="password" placeholder="github_pat_…" autocapitalize="off" autocomplete="off" spellcheck="false">
+        <input class="field" id="labRepo" placeholder="Repo name (fretwork-lab)" autocapitalize="off" autocomplete="off" spellcheck="false">
+        <div class="row"><button class="btn" id="labConnect">Connect lab</button></div>
+        <div class="status" id="labSetupMsg"></div>
+      </div>
+      <div id="labMain" hidden>
+        <div class="row" style="flex-wrap:nowrap"><input class="field" id="labTitle" placeholder="Song" autocapitalize="words"><input class="field" id="labArtist" placeholder="Artist" autocapitalize="words"></div>
+        <div class="row"><button class="btn" id="labRecBtn">Record the song</button><label class="btn ghost" for="labFile" style="cursor:pointer">Choose audio file</label><input type="file" id="labFile" accept="audio/*,.mp3,.m4a,.wav,.flac,.ogg,.opus,.webm" hidden></div>
+        <div class="small muted" id="labHave"></div>
+        <div class="tiny muted">To record: play the song out loud from Spotify or YouTube in a quiet room, phone close to the speaker, and record from start to finish. An audio file you own works even better.</div>
+        <div class="row"><button class="btn w" id="labSend" disabled>Make the tab</button></div>
+        <div class="slist" id="labJobs"></div>
+        <div class="row" style="justify-content:space-between"><span class="tiny muted" id="labWho"></span><button class="chip" id="labForget">Disconnect</button></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -738,6 +761,11 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
         <button class="chip" id="tpGuideChip" aria-pressed="true">Guide sound</button>
         <button class="chip" id="tpSecChip" aria-pressed="true" hidden>Section ✕</button>
         <button class="chip" id="tpRecChip" aria-pressed="false">Play with recording</button><button class="chip" id="tpLoopSec">Loop section</button><button class="chip" id="tpTvChip" aria-pressed="false">TV mode</button><button class="chip" id="tpBgChip" aria-pressed="true">Album art backdrop</button>
+      </div>
+      <div class="tvrow" id="tpLabRow" hidden>
+        <div class="small"><b>Your recording</b></div>
+        <div class="row"><button class="chip" data-lm="full" aria-pressed="true">Full song</button><button class="chip" data-lm="guitar" aria-pressed="false">Guitar only</button><button class="chip" data-lm="backing" aria-pressed="false">Without guitar</button></div>
+        <div class="tiny muted">The tab follows the recording. Use the speed button to slow it down without changing the pitch, and Loop section to repeat a part.</div>
       </div>
       <div class="tvrow" id="tpRecRow" hidden>
         <div class="small"><b>Following the recording</b></div><div class="tiny muted" id="tpRecStat"></div>
@@ -1994,9 +2022,9 @@ const tvLag=()=>REC.on?0:S.tv?(S.tvLag==null?.2:S.tvLag/1000):0;
 const visBeat=()=>TP.playing&&ctx?(ctx.currentTime+tvLag()-TP.t0)/spb():TP.pos;
 function guideVol(){return Math.max(0,Math.min(1,+$("tpVol").value/100));}
 function fmtT(beats){const s=Math.max(0,beats*60/(TP.bpm*TP.speed));return Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");}
-function openSong(id){selectTab(id);openScreen("s-song");}
+function openSong(id){selectTab(id);openScreen("s-song");const t=S.tabs.find(x=>x.id===id);if(t&&t.lab)labAttach(t);}
 const GPCPB=7;
-function selectTab(id){if(typeof REC!=="undefined"&&REC.on)recStop();tpStop();TP.secA=TP.secB=null;if($("tpSecChip"))$("tpSecChip").hidden=true;const t=allTabs().find(x=>x.id===id)||BUILTIN[0];TP.tab=t;
+function selectTab(id){if(typeof REC!=="undefined"&&REC.on)recStop();if(typeof labDetach==="function")labDetach();tpStop();TP.secA=TP.secB=null;if($("tpSecChip"))$("tpSecChip").hidden=true;const t=allTabs().find(x=>x.id===id)||BUILTIN[0];TP.tab=t;
   if(t.kind==="gp"){const tr=t.gp.tracks[t.ti||0]||t.gp.tracks[0];
     const events=tr.ev.map((a,ei)=>{const fxr=tr.fx&&tr.fx[ei];const notes=[];for(let k=2;k<a.length;k+=2)notes.push({s:a[k],fret:a[k+1],row:5-a[k],m:0,fx:fxr?fxr[a[k]]||null:null});notes.sort((x,y)=>x.row-y.row);return {beat:a[0],dur:a[1],t:a[0]*GPCPB,notes};});
     TP.parsed={events,length:Math.ceil(tr.total*GPCPB)+6,blocks:1,labels:null,segs:tr.bars.map((b,i)=>({a:b*GPCPB,b:(i+1<tr.bars.length?tr.bars[i+1]:tr.total)*GPCPB}))};
@@ -2069,7 +2097,7 @@ $("tpNextBar").addEventListener("click",()=>{const bl=barStarts(),b=curBeat();co
 $("tpBack").addEventListener("click",()=>{if(TP.mode==="wait"){TP.wi=0;tpWaitShow(-1);return;}tpRestartAt(0);});
 $("tpFwd").addEventListener("click",()=>{const list=S.tabs.length?S.tabs:allTabs();const i=list.findIndex(t=>TP.tab&&t.id===TP.tab.id);const nx=list[(i+1)%list.length];selectTab(nx.id);});
 $("tpLoop").addEventListener("click",()=>{TP.loop=!TP.loop;$("tpLoop").classList.toggle("on",TP.loop);toast(TP.loop?"Loop on":"Loop off",1500);});
-$("tpSpeed").addEventListener("click",()=>{if(REC.on){toast("Speed stays at 1x while following the recording.",2500);return;}const i=(SPEEDS.indexOf(TP.speed)+1)%SPEEDS.length;const b=curBeat();TP.speed=SPEEDS[i];$("tpSpeed").textContent=TP.speed+"x";if(TP.playing)TP.t0=ctx.currentTime-b*spb();$("tpTimeB").textContent=fmtT(TP.rh.total);});
+$("tpSpeed").addEventListener("click",()=>{if(REC.on&&REC.audio){const i=(SPEEDS.indexOf(REC.rate||1)+1)%SPEEDS.length;REC.rate=SPEEDS[i];REC.audio.playbackRate=REC.rate;REC.audio.preservesPitch=true;$("tpSpeed").textContent=REC.rate+"x";$("hwSpeed").textContent=REC.rate+"x";return;}if(REC.on){toast("Speed stays at 1x while following Spotify.",2500);return;}const i=(SPEEDS.indexOf(TP.speed)+1)%SPEEDS.length;const b=curBeat();TP.speed=SPEEDS[i];$("tpSpeed").textContent=TP.speed+"x";if(TP.playing)TP.t0=ctx.currentTime-b*spb();$("tpTimeB").textContent=fmtT(TP.rh.total);});
 $("tpGuideChip").addEventListener("click",()=>{TP.guide=!TP.guide;$("tpGuideChip").setAttribute("aria-pressed",TP.guide?"true":"false");});
 $("tpSeek").addEventListener("input",e=>{const b=+e.target.value;if(TP.playing)tpRestartAt(b);else{TP.pos=b;}});
 $("tpMicBtn").addEventListener("click",()=>Mic.on?micStop():micStart());
@@ -2130,7 +2158,7 @@ function nkDraw(){if(!NK.base||!TP.parsed)return;const g=NK.g,dpr=NK.dpr,ev=TP.p
 /* long silence before the next guitar note: offer to skip ahead */
 function skipUI(ev,b){const el=$("tpSkip");if(!el)return;let show=false,nb=0;if(ev.length&&TP.mode!=="wait"){const i=idxAt(b)+1;if(i<ev.length){nb=ev[i].beat;const prevEnd=i>0?ev[i-1].beat+ev[i-1].dur:-1e9;show=nb-Math.max(b,0)>8&&(nb-Math.max(b,0))*spb()>7&&(b>prevEnd||i===0);}}
   if(!show){if(!el.hidden)el.hidden=true;return;}const sec=Math.round((nb-b)*spb());const txt="Guitar starts in "+(sec>=60?fmtDur(sec):sec+" s")+" · Skip ›";if(el.textContent!==txt)el.textContent=txt;el.dataset.b=String(nb);if(el.hidden)el.hidden=false;}
-function tpFrame(){if($("s-song").hidden){TP.raf=0;return;}if(REC.on)recFrame();nkLayout();const ev=TP.parsed?TP.parsed.events:[];let b=curBeat();
+function tpFrame(){if($("s-song").hidden){TP.raf=0;if(typeof REC!=="undefined"&&REC.audio&&!REC.audio.paused)REC.audio.pause();return;}if(REC.on)recFrame();nkLayout();const ev=TP.parsed?TP.parsed.events:[];let b=curBeat();
   if(!REC.on&&TP.playing&&b>TP.rh.total+.25){tpCoachSummary();if(TP.loop){tpPause();TP.pos=0;tpPlay();b=curBeat();}else{const h=TP.hits,d=TP.done;tpPause();TP.pos=0;b=0;
       $("tpStatus").textContent=Mic.on&&d?"Done: "+h+" of "+d+" notes hit ("+Math.round(100*h/d)+"%).":"Finished. Press play to go again.";}}
   if(TP.playing){const s=spb(),now=ctx.currentTime;for(let i=TP.done;i<ev.length;i++){const dt=TP.t0+ev[i].beat*s-now;if(dt>-.4)break;if(Mic.on&&!ev[i].hit){ev[i].miss=true;evCls(i,"miss",true);tpCoachMiss(i);}TP.done=i+1;}
@@ -2412,7 +2440,7 @@ $("hwFullBtn").addEventListener("click",()=>hwFull(true,true));
 /* controls that float over the full-screen highway */
 function hwHudShow(){const hud=$("hwHud");hud.classList.add("show");clearTimeout(HW.hudT);HW.hudT=setTimeout(()=>{if(TP.playing||TP.mode==="wait")hud.classList.remove("show");},3200);}
 function hwHudSync(){if(!HW.full)return;const tt=$("tpTitle").textContent;if($("hwTitle").textContent!==tt)$("hwTitle").textContent=tt;const pl=TP.playing;const ic=$("hwPlay");if(ic.dataset.on!==String(pl)){ic.dataset.on=String(pl);ic.innerHTML='<svg viewBox="0 0 24 24">'+(pl?ICON_PAUSE:ICON_PLAY)+'</svg>';}
-  $("hwSpeed").textContent=TP.speed+"x";$("hwWait").setAttribute("aria-pressed",TP.mode==="wait"?"true":"false");$("hwMic").setAttribute("aria-pressed",Mic.on?"true":"false");
+  $("hwSpeed").textContent=((REC.on&&REC.audio)?REC.rate||1:TP.speed)+"x";$("hwWait").setAttribute("aria-pressed",TP.mode==="wait"?"true":"false");$("hwMic").setAttribute("aria-pressed",Mic.on?"true":"false");
   $("hwScore").hidden=true;}
 $("hwCv").addEventListener("click",()=>{if(!HW.full)return;const hud=$("hwHud");if(hud.classList.contains("show")&&(TP.playing||TP.mode==="wait")){hud.classList.remove("show");clearTimeout(HW.hudT);}else hwHudShow();});
 $("hwExit").addEventListener("click",()=>hwFull(false));
@@ -2927,15 +2955,17 @@ function renderLearn(){const box=$("learnBox");if(!box)return;box.innerHTML="";c
 function tuneHeadsUp(){if(!TP.tab)return;if(!T.sameTuning(TP.tun,OPEN)||TP.capo){toast("Heads up: this tab is in "+T.tuningName(TP.tun)+(TP.capo?" with a capo on fret "+TP.capo:"")+". Tap “Tune my guitar” first.",5000);}}
 /* ---------- play along with the real recording ---------- */
 const REC={on:false,pos0:0,t0:0,playing:false,dur:0,key:"",src:"",lastB:0,poll:0,guideWas:true,align:false};
-function recAvailable(){return !!(window.FretworkNative&&window.FretworkNative.transport)||!!(S.sp&&S.sp.refresh);}
-async function recPoll(){if(window.FretworkNative&&window.FretworkNative.nowPlaying){let r="";try{r=window.FretworkNative.nowPlaying();}catch(e){}if(!r||r==="perm"){REC.src="";return false;}let o;try{o=JSON.parse(r);}catch(e){return false;}
+function recAvailable(){return !!REC.audio||!!(window.FretworkNative&&window.FretworkNative.transport)||!!(S.sp&&S.sp.refresh);}
+async function recPoll(){if(REC.audio){const a=REC.audio;recSet(a.currentTime*1000,!a.paused&&!a.ended);REC.dur=a.duration||0;REC.key="";REC.src="the recording";return true;}
+  if(window.FretworkNative&&window.FretworkNative.nowPlaying){let r="";try{r=window.FretworkNative.nowPlaying();}catch(e){}if(!r||r==="perm"){REC.src="";return false;}let o;try{o=JSON.parse(r);}catch(e){return false;}
     recSet(o.pos||0,!!o.playing);REC.dur=(o.dur||0)/1000;REC.key=songKey(o.title,o.artist);REC.src=/spotify/i.test(o.app||"")?"Spotify":"your music app";return true;}
   if(S.sp&&S.sp.refresh){const t0=performance.now();const j=await spGet("/me/player/currently-playing");if(j.err||!j.item)return false;const lat=(performance.now()-t0)/2;recSet((j.progress_ms||0)+(j.is_playing?lat:0),!!j.is_playing);REC.dur=(j.item.duration_ms||0)/1000;REC.key=songKey(j.item.name,(j.item.artists||[]).map(a=>a.name).join(", "));REC.src="Spotify";return true;}
   return false;}
 function recSet(posMs,playing){const now=performance.now();const est=REC.pos0+(REC.playing?(now-REC.t0):0);const d=posMs-est;
   if(REC.playing&&playing&&Math.abs(d)<150){REC.pos0=est+d*.25;}else REC.pos0=posMs;REC.t0=now;REC.playing=playing;}
-const recPos=()=>(REC.pos0+(REC.playing?performance.now()-REC.t0:0))/1000;
-async function recCmd(a,ms){if(window.FretworkNative&&window.FretworkNative.transport){try{window.FretworkNative.transport(a,ms||0);}catch(e){}}
+const recPos=()=>REC.audio?REC.audio.currentTime:(REC.pos0+(REC.playing?performance.now()-REC.t0:0))/1000;
+async function recCmd(a,ms){if(REC.audio){const el=REC.audio;if(a==="seek")el.currentTime=Math.max(0,ms/1000);else if(a==="play")el.play().catch(()=>{});else if(a==="pause")el.pause();setTimeout(recPoll,50);return;}
+  if(window.FretworkNative&&window.FretworkNative.transport){try{window.FretworkNative.transport(a,ms||0);}catch(e){}}
   else if(S.sp&&S.sp.refresh){const t=await spToken();if(!t)return;const path=a==="seek"?"/me/player/seek?position_ms="+Math.round(ms):"/me/player/"+a;try{const r=await fetch("https://api.spotify.com/v1"+path,{method:"PUT",headers:{Authorization:"Bearer "+t}});if(r.status===403)toast("Spotify needs Premium to control playback from Fretwork.",4000);}catch(e){}}
   if(a==="seek"){REC.pos0=ms;REC.t0=performance.now();}else{REC.pos0=recPos()*1000;REC.t0=performance.now();REC.playing=a==="play";}setTimeout(recPoll,350);}
 function recOffset(){return TP.tab&&Number.isFinite(TP.tab.syncOff)?TP.tab.syncOff:0;}
@@ -2998,9 +3028,9 @@ function recFollowStep(){if(!REC.on||!REC.playing||!recSynced()){RF.frames=[];re
   if(r.best-r.mean<.06||r.best-here<.03||Math.abs(r.d)<.07)return;const tm=(RF.frames[0].t+RF.frames[RF.frames.length-1].t)/2;recAddPt(tm,recToBeat(tm-r.d*.7));RF.frames=[];}
 async function recToggle(){if(REC.on){recStop();return;}if(!recAvailable()){toast(window.FretworkNative?"Allow Fretwork to see what's playing first (Listening now page).":"Connect Spotify first on the Listening now page.",4500);return;}
   const ok=await recPoll();if(!ok){toast("Start the song in Spotify, then try again.",3500);return;}tpStop();ac();REC.on=true;REC.guideWas=TP.guide;TP.guide=false;TP.speed=1;$("tpSpeed").textContent="1x";
-  $("tpGuideChip").setAttribute("aria-pressed","false");clearInterval(REC.poll);REC.poll=setInterval(recPoll,window.FretworkNative?300:2000);REC.lastB=-1;TP.done=0;TP.hits=0;HW.streak=0;
+  $("tpGuideChip").setAttribute("aria-pressed","false");clearInterval(REC.poll);REC.poll=setInterval(recPoll,REC.audio?100:window.FretworkNative?300:2000);REC.lastB=-1;TP.done=0;TP.hits=0;HW.streak=0;
   if(TP.tab&&REC.key&&TP.tab.syncKey&&TP.tab.syncKey!==REC.key)toast("Spotify is playing a different song than this tab.",3500);recUI();}
-function recStop(){REC.on=false;clearInterval(REC.poll);TP.guide=REC.guideWas;$("tpGuideChip").setAttribute("aria-pressed",TP.guide?"true":"false");if(TP.playing){TP.playing=false;TP.mode=null;Mic.subs.delete(tpMicTimed);}TP.pos=Math.max(0,TP.pos);setPlayIcons();recUI();}
+function recStop(){REC.on=false;if(REC.audio)REC.audio.pause();clearInterval(REC.poll);TP.guide=REC.guideWas;$("tpGuideChip").setAttribute("aria-pressed",TP.guide?"true":"false");if(TP.playing){TP.playing=false;TP.mode=null;Mic.subs.delete(tpMicTimed);}TP.pos=Math.max(0,TP.pos);setPlayIcons();recUI();}
 function recFrame(){const s=spb();const c=ac();const b=recToBeat(recPos());
   if(REC.playing&&!TP.playing){TP.playing=true;TP.mode="play";TP.done=Math.max(0,idxAt(b-1e-6)+1);TP.hits=0;Mic.subs.add(tpMicTimed);setPlayIcons();}
   else if(!REC.playing&&TP.playing){TP.playing=false;TP.mode=null;Mic.subs.delete(tpMicTimed);setPlayIcons();}
@@ -3042,6 +3072,80 @@ $("tpRecReset").addEventListener("click",recReset);$("tpRecFollow").addEventList
 $("hwRecE").addEventListener("click",()=>{recNudge(-.1);hwHudShow();});$("hwRecL").addEventListener("click",()=>{recNudge(.1);hwHudShow();});
 {let lastTap=0;$("hwCv").addEventListener("pointerdown",()=>{const n=performance.now();if(REC.on&&n-lastTap<350){recTapHere();lastTap=0;}else lastTap=n;});}
 $("tpSkip").addEventListener("click",()=>{const nb=+$("tpSkip").dataset.b;if(!Number.isFinite(nb))return;const bpb=(TP.rh&&TP.rh.bpb)||4;tpRestartAt(Math.max(0,nb-bpb));if(!TP.playing&&!REC.on)tpPlay();});
+/* ---------- Lab: isolate the guitar and draft a tab on your private GitHub ---------- */
+const IDB={db:null};
+function idb(){if(IDB.db)return Promise.resolve(IDB.db);return new Promise((res,rej)=>{const r=indexedDB.open("fretwork-lab",1);r.onupgradeneeded=()=>r.result.createObjectStore("audio");r.onsuccess=()=>{IDB.db=r.result;res(r.result);};r.onerror=()=>rej(r.error);});}
+async function idbPut(k,v){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction("audio","readwrite");tx.objectStore("audio").put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function idbGet(k){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction("audio","readonly");const q=tx.objectStore("audio").get(k);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error);});}
+const LAB={rec:null,chunks:[],blob:null,ext:"",t0:0,timer:0,poll:0};
+const labOk=()=>!!(S.lab&&S.lab.token&&S.lab.repo);
+async function gh(path,opt){opt=opt||{};const r=await fetch("https://api.github.com/repos/"+S.lab.repo+path,{method:opt.method||"GET",cache:"no-store",
+    headers:Object.assign({Authorization:"Bearer "+S.lab.token,Accept:opt.raw?"application/vnd.github.raw+json":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},opt.body?{"Content-Type":"application/json"}:{}),body:opt.body?JSON.stringify(opt.body):undefined});
+  if(r.status===404)return null;if(!r.ok){const t=await r.text().catch(()=>"");const e=new Error("GitHub said "+r.status+(t?": "+t.slice(0,120):""));e.status=r.status;throw e;}return opt.raw?new Uint8Array(await r.arrayBuffer()):r.status===204?{}:r.json();}
+const b64of=blob=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(",")[1]);fr.onerror=()=>rej(fr.error);fr.readAsDataURL(blob);});
+const b64txt=s=>btoa(unescape(encodeURIComponent(s)));
+function labUI(){const box=$("labBody");if(!box)return;const ok=labOk();$("labSetup").hidden=ok;$("labMain").hidden=!ok;$("labWho").textContent=ok?"Connected to "+S.lab.repo:"";
+  const np=NP.cur;if(np&&np.title&&!$("labTitle").value){$("labTitle").value=npClean(np.title);$("labArtist").value=npMainArtist(np.artist||"");}
+  $("labSend").disabled=!LAB.blob;$("labRecBtn").textContent=LAB.rec?"Stop recording":"Record the song";$("labRecBtn").classList.toggle("rec",!!LAB.rec);
+  $("labHave").textContent=LAB.blob?(LAB.name||"Recording")+" · "+(LAB.blob.size/1048576).toFixed(1)+" MB ready to send":"";labJobsUI();}
+async function labConnect(){const token=$("labToken").value.trim();if(!token){toast("Paste the key from GitHub first.",3000);return;}const msg=$("labSetupMsg");msg.textContent="Checking…";
+  try{const u=await fetch("https://api.github.com/user",{headers:{Authorization:"Bearer "+token}});let login=u.ok?(await u.json()).login:"";if(!login)login="antisaint65-droid";
+    const name=($("labRepo").value.trim()||"fretwork-lab").replace(/^.*\//,"");const repo=login+"/"+name;
+    const r=await fetch("https://api.github.com/repos/"+repo,{headers:{Authorization:"Bearer "+token}});if(!r.ok){msg.textContent=r.status===404?"Couldn't find "+repo+". Check the repo name, and that the key was made for that repo.":"GitHub said "+r.status+". Check the key.";return;}
+    const j=await r.json();if(!j.private){msg.textContent=repo+" is public. Make it private first (Settings → Danger Zone → Change visibility) so your recordings stay private.";return;}
+    S.lab={token,repo};save();$("labToken").value="";msg.textContent="";toast("Lab connected",1800);labUI();}catch(e){msg.textContent="Couldn't reach GitHub. Check your internet.";}}
+async function labRecord(){if(LAB.rec){LAB.rec.stop();return;}if(!(await needMic()))return;
+  const types=["audio/webm;codecs=opus","audio/mp4","audio/ogg;codecs=opus","audio/webm"];const mt=types.find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||"";
+  let rec;try{rec=new MediaRecorder(Mic.stream,mt?{mimeType:mt,audioBitsPerSecond:160000}:undefined);}catch(e){toast("This phone can't record here: "+(e.message||e),4000);return;}
+  LAB.chunks=[];LAB.blob=null;LAB.rec=rec;LAB.t0=Date.now();rec.ondataavailable=e=>{if(e.data&&e.data.size)LAB.chunks.push(e.data);};
+  rec.onstop=()=>{clearInterval(LAB.timer);const type=rec.mimeType||mt||"audio/webm";LAB.blob=new Blob(LAB.chunks,{type});LAB.ext=/mp4/.test(type)?"m4a":/ogg/.test(type)?"ogg":"webm";LAB.name="Recording "+fmtDur((Date.now()-LAB.t0)/1000);LAB.rec=null;labUI();};
+  rec.start(1000);LAB.timer=setInterval(()=>{$("labHave").textContent="Recording… "+fmtDur((Date.now()-LAB.t0)/1000)+" (play the whole song out loud)";},500);labUI();
+  toast("Recording. Play the song out loud, then tap Stop.",3000);}
+function labFile(f){if(!f)return;if(f.size>60*1048576){toast("That file is over 60 MB. Pick a smaller one.",3500);return;}LAB.blob=f;LAB.name=f.name;LAB.ext=(f.name.match(/\.([a-z0-9]{2,4})$/i)||[,"mp3"])[1].toLowerCase();
+  if(!$("labTitle").value)$("labTitle").value=niceTitle(f.name).replace(/^\d+\s*[-.]?\s*/,"");labUI();}
+async function labSend(){if(!LAB.blob||!labOk())return;const title=$("labTitle").value.trim()||"My recording",artist=$("labArtist").value.trim();const id="j"+Date.now().toString(36);
+  const btn=$("labSend");btn.disabled=true;btn.textContent="Sending…";
+  try{await gh("/contents/jobs/"+id+"/job.json",{method:"PUT",body:{message:"job "+id,content:b64txt(JSON.stringify({title,artist}))}});
+    await gh("/contents/jobs/"+id+"/input."+LAB.ext,{method:"PUT",body:{message:"input "+id,content:await b64of(LAB.blob)}});
+    await idbPut(id+":full",LAB.blob);S.labJobs=S.labJobs||[];S.labJobs.unshift({id,title,artist,at:Date.now(),st:"queued"});save();LAB.blob=null;$("labTitle").value="";$("labArtist").value="";
+    toast("Sent. It takes about 5 to 10 minutes.",3500);labPollSoon();}
+  catch(e){toast("Couldn't send it: "+(e.message||e),5000);}btn.textContent="Make the tab";labUI();}
+const LABST={queued:"Waiting for GitHub…",separating:"Pulling out the guitar…",transcribing:"Writing the tab…",ready:"Ready",error:"Didn't work",done:"Added to your songs"};
+function labJobsUI(){const box=$("labJobs");if(!box)return;const L=(S.labJobs||[]).slice(0,8);box.innerHTML="";
+  L.forEach(j=>{const row=document.createElement("div");row.className="srow";const mins=Math.max(0,Math.round((Date.now()-j.at)/60000));
+    row.innerHTML='<div><div class="t">'+esc(j.title)+'</div><div class="m">'+esc((j.artist?j.artist+" · ":"")+(LABST[j.st]||j.st)+(j.st==="queued"||j.st==="separating"||j.st==="transcribing"?" · "+mins+" min":"")+(j.err?" · "+j.err:""))+'</div></div>';
+    const b=document.createElement("button");b.className="btn small"+(j.st==="ready"?"":" ghost");
+    if(j.st==="ready"){b.textContent="Get";b.addEventListener("click",()=>labImport(j,b));}else if(j.st==="done"){b.textContent="Open";b.addEventListener("click",()=>{if(j.tab&&S.tabs.some(t=>t.id===j.tab))openSong(j.tab);});}
+    else if(j.st==="error"){b.textContent="Remove";b.addEventListener("click",()=>{S.labJobs=S.labJobs.filter(x=>x!==j);save();labJobsUI();});}else{b.textContent="Check";b.addEventListener("click",()=>labPoll());}
+    row.appendChild(b);box.appendChild(row);});}
+async function labPoll(){if(!labOk())return;const open=(S.labJobs||[]).filter(j=>["queued","separating","transcribing"].includes(j.st));if(!open.length){clearInterval(LAB.poll);LAB.poll=0;return;}
+  for(const j of open){try{const out=await gh("/contents/jobs/"+j.id+"/out");const names=(out||[]).map(f=>f.name);
+      if(names.includes("meta.json"))j.st="ready";else if(names.includes("error.txt")){j.st="error";try{const t=new TextDecoder().decode(await gh("/contents/jobs/"+j.id+"/out/error.txt",{raw:true}));j.err=/no audio|Invalid data|could not/i.test(t)?"the recording couldn't be read":"see error.txt in your lab repo";}catch(e){}}
+      else{const st=await gh("/contents/jobs/"+j.id+"/status.json",{raw:true});if(st){try{j.st=JSON.parse(new TextDecoder().decode(st)).stage||j.st;}catch(e){}}}
+      if(j.st==="ready")toast("“"+j.title+"” is ready. Tap Get.",4000);}catch(e){if(e.status===401){toast("The lab key stopped working. Connect again.",4000);S.lab=null;save();labUI();return;}}}
+  save();labJobsUI();}
+function labPollSoon(){labPoll();if(!LAB.poll)LAB.poll=setInterval(labPoll,20000);}
+async function labImport(j,btn){btn.disabled=true;btn.textContent="Getting…";
+  try{const p="/contents/jobs/"+j.id+"/out/";const [gp5,meta,gtr,bk]=await Promise.all([gh(p+"tab.gp5",{raw:true}),gh(p+"meta.json",{raw:true}),gh(p+"guitar.mp3",{raw:true}),gh(p+"backing.mp3",{raw:true})]);
+    const m=JSON.parse(new TextDecoder().decode(meta));if(gtr)await idbPut(j.id+":guitar",new Blob([gtr],{type:"audio/mpeg"}));if(bk)await idbPut(j.id+":backing",new Blob([bk],{type:"audio/mpeg"}));
+    const before=S.tabs.length;await importGp(gp5,j.title+(j.artist?" - "+j.artist:""));const t=S.tabs[S.tabs.length-1];
+    if(t&&S.tabs.length>before){t.lab=j.id;t.title=j.title+(j.artist?" · "+j.artist:"");if(Array.isArray(m.syncPts)&&m.syncPts.length)t.syncPts=m.syncPts;t.tiPicked=1;j.tab=t.id;}
+    j.st="done";save();labJobsUI();renderSongLists();if(t)openSong(t.id);toast("Draft tab added. It's a starting point: fix notes as you learn it.",4500);}
+  catch(e){btn.disabled=false;btn.textContent="Get";toast("Couldn't download it: "+(e.message||e),4500);}}
+/* Song Master: play the recording (full, guitar only, or without guitar) and the tab follows it */
+const LABP={el:null,id:null,mode:"full",urls:{}};
+async function labAttach(t){labDetach();if(!t||!t.lab)return;const id=t.lab;const blobs={};for(const k of ["full","guitar","backing"]){try{const b=await idbGet(id+":"+k);if(b)blobs[k]=b;}catch(e){}}
+  if(!Object.keys(blobs).length)return;LABP.id=id;Object.entries(blobs).forEach(([k,b])=>LABP.urls[k]=URL.createObjectURL(b));LABP.mode=blobs.full?"full":Object.keys(blobs)[0];
+  const a=new Audio(LABP.urls[LABP.mode]);a.preload="auto";a.preservesPitch=true;LABP.el=a;REC.audio=a;REC.rate=1;$("tpLabRow").hidden=false;labModeUI();
+  a.addEventListener("ended",()=>{recPoll();});if(!REC.on)recToggle();}
+function labDetach(){if(LABP.el){LABP.el.pause();LABP.el.src="";}Object.values(LABP.urls).forEach(u=>URL.revokeObjectURL(u));LABP.urls={};LABP.el=null;LABP.id=null;if(typeof REC!=="undefined"){REC.audio=null;REC.rate=1;}if($("tpLabRow"))$("tpLabRow").hidden=true;}
+function labMode(k){const a=LABP.el;if(!a||!LABP.urls[k])return;const t=a.currentTime,pl=!a.paused;LABP.mode=k;a.src=LABP.urls[k];a.playbackRate=REC.rate||1;a.preservesPitch=true;
+  a.addEventListener("loadedmetadata",()=>{a.currentTime=t;if(pl)a.play().catch(()=>{});},{once:true});labModeUI();}
+function labModeUI(){document.querySelectorAll("#tpLabRow [data-lm]").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.lm===LABP.mode?"true":"false");b.hidden=!LABP.urls[b.dataset.lm];});}
+$("labConnect").addEventListener("click",labConnect);$("labRecBtn").addEventListener("click",labRecord);$("labFile").addEventListener("change",e=>{labFile(e.target.files[0]);e.target.value="";});
+$("labSend").addEventListener("click",labSend);$("labForget").addEventListener("click",()=>{S.lab=null;save();labUI();});
+document.querySelectorAll("#tpLabRow [data-lm]").forEach(b=>b.addEventListener("click",()=>labMode(b.dataset.lm)));
+setTimeout(()=>{labUI();if((S.labJobs||[]).some(j=>["queued","separating","transcribing"].includes(j.st)))labPollSoon();},0);
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
@@ -3096,7 +3200,7 @@ function buildDeck(){const deck=document.createElement("div");deck.className="de
   put("play",$("tabList").parentElement);
   {const pw=$("progList").parentElement;const d=document.createElement("details");d.className="drop";d.innerHTML='<summary>Chord play-along<span class="lbl" id="progCount"></span></summary>';d.appendChild($("progList"));pw.remove();put("play",d);}
   /* tuner, find, tools, profile */
-  put("tune",document.querySelector("#v-tools .tuner"));put("find",$("importSec"));put("tools",document.querySelector("#v-tools .tools"));
+  put("tune",document.querySelector("#v-tools .tuner"));put("find",$("importSec"));put("find",$("labSec"));put("tools",document.querySelector("#v-tools .tools"));
   [...$("v-profile").children].filter(c=>!c.matches("h1")).forEach(c=>put("me",c));
   /* the whole journey lives on its own screen now */
   const jb=$("journeyBody");jb.appendChild($("modules"));jb.appendChild(document.querySelector("#v-learn .jfoot"));
