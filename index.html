@@ -817,6 +817,7 @@ body.in-screen .dhead{visibility:hidden}
 .ytlvl{height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}.ytlvl i{display:block;height:100%;width:0;background:#FF9F0A;transition:width .2s}
 .ytbtns{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}.ytbtns .btn{flex:1}
 #labCard.flash{box-shadow:0 0 0 2px #FF9F0A}
+.tunchip{justify-self:start;margin:-4px 0 4px 12px}.tunpanel{display:grid;gap:10px;padding:12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
 .crashbox{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.6);display:grid;place-items:end center;padding:0 12px calc(16px + env(safe-area-inset-bottom,0px))}
 .crashin{width:min(100%,520px);display:grid;gap:10px;padding:18px;border-radius:22px;background:#1c1c1e;border:1px solid rgba(255,255,255,.12)}
 .crashin textarea{height:160px;font-size:11.5px}
@@ -3772,29 +3773,47 @@ async function labFile(f){if(!f)return;const vid=/^video\//.test(f.type||"")||/\
   else{if(f.size>60*1048576){toast("That file is over 60 MB. Pick a smaller one.",3500);return;}LAB.blob=f;LAB.name=f.name;LAB.ext=(f.name.match(/\.([a-z0-9]{2,4})$/i)||[,"mp3"])[1].toLowerCase();}
   if(LAB.blob.size>40*1048576&&labGuest()){LAB.blob=null;toast("That's too long to send to the shared lab (40 MB max).",4500);labUI();return;}
   LAB.img="";if(!$("labTitle").value)$("labTitle").value=niceTitle(f.name).replace(/^\d+\s*[-.]?\s*/,"");labUI();}
+/* the song's tuning and capo, from Gemini's song facts, so the lab writes the tab the way it's really played */
+async function labTuning(title,artist){if(!artist||!title||typeof aiOn!=="function"||!aiOn("facts"))return {};let f=null;try{f=await Promise.race([aiFacts(artist,title),sleep(9000).then(()=>null)]);}catch(e){}
+  return f&&f.tuning?{tuning:String(f.tuning).slice(0,40),capo:Math.max(0,Math.min(12,+f.capo||0))}:{};}
 async function labSend(){if(!LAB.blob||!labOk())return;const title=$("labTitle").value.trim()||"My recording",artist=$("labArtist").value.trim();let id="j"+Date.now().toString(36);
-  const btn=$("labSend");btn.disabled=true;btn.textContent="Sending…";
-  if(labGuest()){try{const b=await b64of(LAB.blob);const j=await relay("/job?title="+encodeURIComponent(title)+"&artist="+encodeURIComponent(artist)+"&ext="+LAB.ext,{method:"POST",body:b,headers:{"X-Len":String(b.length),"Content-Type":"text/plain"}});id=j.id;
-      await idbPut(id+":full",LAB.blob);S.labJobs=S.labJobs||[];S.labJobs.unshift({id,title,artist,at:Date.now(),st:"queued",via:"relay",img:LAB.img||""});save();LAB.blob=null;LAB.img="";$("labTitle").value="";$("labArtist").value="";
+  const btn=$("labSend");btn.disabled=true;btn.textContent="Sending…";const tun=await labTuning(title,artist);
+  if(labGuest()){try{const b=await b64of(LAB.blob);const j=await relay("/job?title="+encodeURIComponent(title)+"&artist="+encodeURIComponent(artist)+"&ext="+LAB.ext+(tun.tuning?"&tuning="+encodeURIComponent(tun.tuning)+"&capo="+(tun.capo||0):""),{method:"POST",body:b,headers:{"X-Len":String(b.length),"Content-Type":"text/plain"}});id=j.id;
+      await idbPut(id+":full",LAB.blob);S.labJobs=S.labJobs||[];S.labJobs.unshift(Object.assign({id,title,artist,at:Date.now(),st:"queued",via:"relay",img:LAB.img||""},tun));save();LAB.blob=null;LAB.img="";$("labTitle").value="";$("labArtist").value="";
       toast("Sent. It takes about 5 to 10 minutes."+(j.left!=null?" "+j.left+" left today.":""),3500);labPollSoon();}
     catch(e){toast(e.message||"Couldn't send it.",5000);}btn.textContent="Make the tab";labUI();return;}
-  try{await gh("/contents/jobs/"+id+"/job.json",{method:"PUT",body:{message:"job "+id,content:b64txt(JSON.stringify({title,artist}))}});
+  try{await gh("/contents/jobs/"+id+"/job.json",{method:"PUT",body:{message:"job "+id,content:b64txt(JSON.stringify(Object.assign({title,artist},tun)))}});
     await gh("/contents/jobs/"+id+"/input."+LAB.ext,{method:"PUT",body:{message:"input "+id,content:await b64of(LAB.blob)}});
-    await idbPut(id+":full",LAB.blob);S.labJobs=S.labJobs||[];S.labJobs.unshift({id,title,artist,at:Date.now(),st:"queued",img:LAB.img||""});save();LAB.blob=null;LAB.img="";$("labTitle").value="";$("labArtist").value="";
+    await idbPut(id+":full",LAB.blob);S.labJobs=S.labJobs||[];S.labJobs.unshift(Object.assign({id,title,artist,at:Date.now(),st:"queued",img:LAB.img||""},tun));save();LAB.blob=null;LAB.img="";$("labTitle").value="";$("labArtist").value="";
     toast("Sent. It takes about 5 to 10 minutes.",3500);labPollSoon();}
   catch(e){toast("Couldn't send it: "+(e.message||e),5000);}btn.textContent="Make the tab";labUI();}
 const LABST={queued:"Waiting for GitHub…",separating:"Pulling out the guitar…",transcribing:"Writing the tab…",ready:"Ready",error:"Didn't work",done:"Added to your songs"};
 function labJobsUI(){const box=$("labJobs");if(!box)return;const L=(S.labJobs||[]).slice(0,8);box.innerHTML="";if($("labSec"))$("labSec").hidden=!L.length;
   L.forEach(j=>{const row=document.createElement("div");row.className="srow";const mins=Math.max(0,Math.round((Date.now()-j.at)/60000));
-    row.innerHTML=(j.img?'<img class="npimg" alt="" onerror="this.style.visibility=\'hidden\'" src="'+esc(j.img)+'">':'<div class="ic">'+TAB_IC+'</div>')+'<div><div class="t">'+esc(j.title)+'</div><div class="m">'+esc((j.artist?j.artist+" · ":"")+(LABST[j.st]||j.st)+(j.st==="queued"||j.st==="separating"||j.st==="transcribing"?" · "+mins+" min":"")+(j.err?" · "+j.err:""))+'</div></div>';
+    const tn=j.tuning&&!/^(e\s*)?standard$/i.test(j.tuning)?" · "+j.tuning+(j.capo?" capo "+j.capo:""):"";
+    row.innerHTML=(j.img?'<img class="npimg" alt="" onerror="this.style.visibility=\'hidden\'" src="'+esc(j.img)+'">':'<div class="ic">'+TAB_IC+'</div>')+'<div><div class="t">'+esc(j.title)+'</div><div class="m">'+esc((j.artist?j.artist+" · ":"")+(LABST[j.st]||j.st)+tn+(j.st==="queued"||j.st==="separating"||j.st==="transcribing"?" · "+mins+" min":"")+(j.err?" · "+j.err:""))+'</div></div>';
     const b=document.createElement("button");b.className="btn small"+(j.st==="ready"?"":" ghost");
     if(j.st==="ready"){b.textContent="Get";b.addEventListener("click",()=>labImport(j,b));}else if(j.st==="done"){b.textContent="Open";b.addEventListener("click",()=>{if(j.tab&&S.tabs.some(t=>t.id===j.tab))openSong(j.tab);});}
     else if(j.st==="error"){b.textContent="Remove";b.addEventListener("click",()=>{S.labJobs=S.labJobs.filter(x=>x!==j);save();labJobsUI();});}else{b.textContent="Check";b.addEventListener("click",()=>labPoll());}
-    row.appendChild(b);box.appendChild(row);});}
+    row.appendChild(b);box.appendChild(row);
+    if(j.via!=="relay"&&labOwn()&&(j.st==="done"||j.st==="ready")){const c=document.createElement("button");c.className="chip tunchip";c.textContent="Wrong tuning? Change it";c.addEventListener("click",()=>labTunePanel(j,c));box.appendChild(c);}});}
+const LAB_TUNINGS=["Standard","Half step down","Whole step down","Drop D","Drop C#","Drop C","DADGAD","Open G","Open D","Open E","Open C","Double drop D"];
+function labTunePanel(j,anchor){const old=$("tunPanel");if(old){old.remove();if(old._j===j)return;}const d=document.createElement("div");d.id="tunPanel";d._j=j;d.className="tunpanel";
+  const opts=[...new Set([j.tuning,...LAB_TUNINGS].filter(Boolean))];
+  d.innerHTML='<div class="small muted">Rewrite the tab for another tuning. It uses the guitar part the lab already pulled out, so it only takes a few minutes.</div><div class="row" style="flex-wrap:nowrap"><select class="field" id="tunSel">'+opts.map(o=>'<option'+(o===(j.tuning||"Standard")?" selected":"")+'>'+esc(o)+'</option>').join("")+'</select><select class="field" id="tunCapo" style="max-width:120px">'+Array.from({length:8},(_,i)=>'<option value="'+i+'"'+(i===(j.capo||0)?" selected":"")+'>'+(i?"Capo "+i:"No capo")+'</option>').join("")+'</select></div><div class="row"><button class="btn small" id="tunGo">Rewrite the tab</button></div>';
+  anchor.after(d);$("tunGo").addEventListener("click",()=>labRedo(j,$("tunSel").value,+$("tunCapo").value,$("tunGo")));}
+async function labRedo(j,tuning,capo,btn){btn.disabled=true;btn.textContent="Sending…";
+  try{const cur=await gh("/contents/jobs/"+j.id+"/job.json");let meta={};try{meta=JSON.parse(decodeURIComponent(escape(atob(String(cur.content).replace(/\s/g,"")))));}catch(e){}
+    const same=(meta.tuning||"Standard")===tuning&&(+meta.capo||0)===capo;
+    if(!same){meta.tuning=tuning;meta.capo=capo;await gh("/contents/jobs/"+j.id+"/job.json",{method:"PUT",body:{message:"tuning "+j.id,content:b64txt(JSON.stringify(meta)),sha:cur.sha}});
+      await gh("/contents/jobs/"+j.id+"/redo",{method:"PUT",body:{message:"redo "+j.id,content:b64txt(String(Date.now()))}});}
+    j.tuning=tuning;j.capo=capo;j.st="queued";j.at=Date.now();j.redo=1;save();const p=$("tunPanel");if(p)p.remove();labJobsUI();labPollSoon();toast("Rewriting it in "+tuning+". A few minutes.",3500);}
+  catch(e){btn.disabled=false;btn.textContent="Rewrite the tab";toast("Couldn't send it: "+(e.message||e),4500);}}
 async function labPoll(){if(!labOk())return;const open=(S.labJobs||[]).filter(j=>["queued","separating","transcribing"].includes(j.st));if(!open.length){clearInterval(LAB.poll);LAB.poll=0;return;}
   for(const j of open){if(j.via==="relay"){try{const r=await relay("/status?id="+encodeURIComponent(j.id));j.st=r.st==="error"?"error":r.st||j.st;if(r.st==="error")j.err="the recording couldn't be turned into a tab";if(j.st==="ready")toast("“"+j.title+"” is ready. Tap Get.",4000);}catch(e){}continue;}
     try{const out=await gh("/contents/jobs/"+j.id+"/out");const names=(out||[]).map(f=>f.name);
-      if(names.includes("meta.json"))j.st="ready";else if(names.includes("error.txt")){j.st="error";try{const t=new TextDecoder().decode(await gh("/contents/jobs/"+j.id+"/out/error.txt",{raw:true}));j.err=/no audio|Invalid data|could not/i.test(t)?"the recording couldn't be read":"see error.txt in your lab repo";}catch(e){}}
+      let fresh=true;if(j.redo&&names.includes("meta.json")){try{const m=JSON.parse(new TextDecoder().decode(await gh("/contents/jobs/"+j.id+"/out/meta.json",{raw:true})));fresh=(m.tuning||"Standard")===(j.tuning||"Standard")&&(+m.capo||0)===(+j.capo||0);}catch(e){fresh=false;}}
+      if(names.includes("meta.json")&&fresh){j.st="ready";delete j.redo;}else if(names.includes("error.txt")){j.st="error";try{const t=new TextDecoder().decode(await gh("/contents/jobs/"+j.id+"/out/error.txt",{raw:true}));j.err=/no audio|Invalid data|could not/i.test(t)?"the recording couldn't be read":"see error.txt in your lab repo";}catch(e){}}
       else{const st=await gh("/contents/jobs/"+j.id+"/status.json",{raw:true});if(st){try{j.st=JSON.parse(new TextDecoder().decode(st)).stage||j.st;}catch(e){}}}
       if(j.st==="ready")toast("“"+j.title+"” is ready. Tap Get.",4000);}catch(e){if(e.status===401){toast("The lab key stopped working. Connect again.",4000);S.lab=null;save();labUI();return;}}}
   save();labJobsUI();}
@@ -3803,6 +3822,7 @@ async function labImport(j,btn){btn.disabled=true;btn.textContent="Getting…";
   try{const p="/contents/jobs/"+j.id+"/out/";const get=n=>j.via==="relay"?relay("/file?id="+encodeURIComponent(j.id)+"&name="+n,{raw:true}).catch(()=>null):gh(p+n,{raw:true});
     const [gp5,meta,gtr,bk]=await Promise.all([get("tab.gp5"),get("meta.json"),get("guitar.mp3"),get("backing.mp3")]);if(!gp5||!meta)throw new Error("the tab isn't there yet");
     const m=JSON.parse(new TextDecoder().decode(meta));if(gtr)await idbPut(j.id+":guitar",new Blob([gtr],{type:"audio/mpeg"}));if(bk)await idbPut(j.id+":backing",new Blob([bk],{type:"audio/mpeg"}));
+    if(j.tab){const oi=S.tabs.findIndex(t=>t.id===j.tab);if(oi>=0)S.tabs.splice(oi,1);}
     const before=S.tabs.length;await importGp(gp5,j.title+(j.artist?" - "+j.artist:""));const t=S.tabs[S.tabs.length-1];
     if(t&&S.tabs.length>before){t.lab=j.id;t.title=j.title+(j.artist?" · "+j.artist:"");if(Array.isArray(m.syncPts)&&m.syncPts.length)t.syncPts=m.syncPts;t.tiPicked=1;j.tab=t.id;}
     j.st="done";save();labJobsUI();renderSongLists();if(t)openSong(t.id);toast("Draft tab added. It's a starting point: fix notes as you learn it.",4500);if(t&&gtr&&typeof aiOn==="function"&&aiOn("labcheck"))setTimeout(()=>labAiCheck(t,gtr),4800);}
