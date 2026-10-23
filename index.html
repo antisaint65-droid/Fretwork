@@ -602,6 +602,15 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 @keyframes fland{0%{opacity:0;transform:translateY(-30px) scale(1.5)}60%{opacity:1;transform:translateY(0) scale(.92)}100%{opacity:1;transform:scale(1)}}
 #chFingers>div{transition:color .2s,background .2s;border-radius:10px;padding:2px 6px;margin:0 -6px}
 #chFingers>div.hl{color:#fff;background:rgba(100,210,255,.18)}
+
+/* daily plan + progress */
+.planbox{display:grid;gap:8px}
+.planrow{display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:center;text-align:left;width:100%;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);border-radius:18px;padding:12px 14px;color:#fff}
+.planrow b{display:block;font:600 15.5px var(--sans)}.planrow span{display:block;font-size:13px;color:rgba(255,255,255,.6);margin-top:2px}.planrow em{font-style:normal;font-size:12.5px;color:rgba(255,255,255,.5)}
+.pchk{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.35);display:grid;place-items:center}.planrow.done .pchk{background:#30D158;border-color:#30D158}.planrow.done b{color:rgba(255,255,255,.55);text-decoration:line-through}
+.progbox{display:grid;gap:10px}.heat{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}.hm{aspect-ratio:1;border-radius:5px;background:rgba(255,255,255,.07)}
+.hm.l1{background:rgba(100,210,255,.25)}.hm.l2{background:rgba(100,210,255,.45)}.hm.l3{background:rgba(100,210,255,.7)}.hm.l4{background:#64D2FF}
+.sprog{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.07)}.sprog .t{font-weight:600}
 </style>
 </head>
 <body>
@@ -720,6 +729,7 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 <section class="view wrap" id="v-profile" hidden>
   <h1 class="title">Profile</h1>
   <div class="stats" id="stats"></div>
+  <div class="card pad progbox" id="progBox"></div>
   <div class="card pad" id="bkCard">
     <b>Backup</b>
     <div class="small muted">Keeps your songs, progress and settings safe if your phone breaks or the app gets deleted.</div>
@@ -2845,7 +2855,7 @@ $("ePlay").addEventListener("click",()=>{if(E.ans!=null&&!E.locked){ePlayCur();r
 document.querySelectorAll("#eLevel button").forEach(b=>b.addEventListener("click",()=>{E.level=+b.dataset.l;document.querySelectorAll("#eLevel button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));E.ans=null;eChoices();$("ePlay").textContent="Play interval";$("eStatus").textContent="";}));
 
 /* ================= profile ================= */
-function renderStats(){const done=LESSONS.filter((_,i)=>S.done[i]).length;const best=Object.values(S.best).reduce((a,b)=>Math.max(a,b),0);
+function renderStats(){const done=LESSONS.filter((_,i)=>S.done[i]).length;const best=Object.entries(S.best).filter(([k])=>!/^strum:/.test(k)).reduce((a,[,b])=>Math.max(a,b),0);if(typeof renderProgress==="function")try{renderProgress();}catch(e){}
   $("stats").innerHTML='<div class="stat"><b>'+streak()+'</b><span>Day streak</span></div><div class="stat"><b>'+done+'/'+LESSONS.length+'</b><span>Lessons done</span></div><div class="stat"><b>'+(S.tabs.length+S.progs.length)+'</b><span>Songs added</span></div><div class="stat"><b>'+best+'</b><span>Best chord changes</span></div>';
   $("pTun").textContent=T.tuningName(OPEN)+" · "+T.tuningNotes(OPEN);$("streakPill").innerHTML="<b>"+streak()+"</b> day streak";}
 $("pVol").value=String(Math.round(S.vol*100));$("pVolOut").textContent=Math.round(S.vol*100)+"%";
@@ -2888,7 +2898,7 @@ function tpCoachWrongFrame(fr){if(!fr.stable||fr.note<0)return;const ev=TP.parse
 function tpCoachMiss(i){const e=TP.parsed.events[i];const b=barOf(e.beat);TP.missBar[b]=(TP.missBar[b]||0)+1;
   if(TP.wrong[i]!=null&&e.notes.length===1){const c=coachNote(e.notes[0],TP.wrong[i],TP.tun,"bar "+(b+1));tutorSay(c.text,{visual:c.visual,mood:"warn",key:"tpwrong",cooldown:5500});}}
 function tpCoachHit(i,now){const e=TP.parsed.events[i];const sched=TP.t0+e.beat*spb();TP.tim.push(now-.06-sched);}
-function tpCoachSummary(){if(!Mic.on||TP.done<8)return;const pct=Math.round(100*TP.hits/TP.done);let t="That run: "+TP.hits+" of "+TP.done+" notes ("+pct+"%).";const adapted=diffAdapt(pct);
+function tpCoachSummary(){if(!Mic.on||TP.done<8)return;const pct=Math.round(100*TP.hits/TP.done);let t="That run: "+TP.hits+" of "+TP.done+" notes ("+pct+"%).";runLog(pct);const adapted=diffAdapt(pct);
   if(TP.tim.length>=6){const avg=TP.tim.reduce((a,b)=>a+b,0)/TP.tim.length;if(avg<-.07)t+=" You're rushing a little, landing about "+Math.round(-avg*1000)+" ms early. Wait for the light to land.";else if(avg>.09)t+=" You're dragging a bit, about "+Math.round(avg*1000)+" ms late. Look one note ahead.";else t+=" Your timing is right on.";}
   const bars=Object.entries(TP.missBar).sort((a,b)=>b[1]-a[1]);const acts=[];
   if(bars.length&&pct<92){const b=+bars[0][0];const a=Math.max(0,b),z=a+1;t+=" Bars "+(a+1)+"–"+(z+1)+" gave you the most trouble.";acts.push({label:"Loop bars "+(a+1)+"–"+(z+1)+" at 75%",fn:()=>setSection(a,z,.75)});}
@@ -3371,6 +3381,37 @@ $("rtBpm").addEventListener("input",e=>{RT.bpm=+e.target.value;$("rtBpmOut").tex
 $("rtGo").addEventListener("click",()=>RT.on?rtStop():rtStart(false));$("rtCal").addEventListener("click",()=>{if(RT.on)rtStop();RT.bpm=Math.max(60,Math.min(90,RT.bpm));rtStart(true);});
 $("rtDrop").addEventListener("click",()=>{RT.drop=!RT.drop;$("rtDrop").setAttribute("aria-pressed",RT.drop?"true":"false");});
 onClose["s-strum"]=()=>rtStop();rtBuild();
+/* ---------- practice time, daily plan and progress ---------- */
+S.mins=S.mins||{};
+setInterval(()=>{if(document.hidden)return;const busy=(TP.playing||TP.mode==="wait")||P.playing||RT.on||!!TR.timer||(Mic.on&&stack.length>0);if(!busy)return;const k=dkey(new Date());S.mins[k]=(S.mins[k]||0)+.5;
+  const ks=Object.keys(S.mins).sort();if(ks.length>120)delete S.mins[ks[0]];if(Math.round(S.mins[k]*2)%4===0)save();if(S.mins[k]>=1)logDay();},30000);
+function runLog(pct){const t=TP.tab;if(!t||t.builtin||!S.tabs.includes(t))return;t.runs=t.runs||[];t.runs.push([Date.now(),pct,diffLevel()]);if(t.runs.length>40)t.runs=t.runs.slice(-40);save();}
+/* today's plan: warm-up, changes, rhythm, the next lesson and a song */
+function planItems(){const ni=nextLessonIdx();const L=ni>=0?LESSONS[ni]:null;const items=[];
+  items.push({k:"warm",min:2,t:"Warm up: the spider",d:"Frets 1-2-3-4 on each string, slow and clean.",go:()=>openScreen("s-neck")});
+  const pairs=[["Em","Am"],["G","C"],["C","D"],["E","A"],["A","D"],["G","D"],["Em","G"],["C","F"],["G","Bm"]];const known=new Set(LESSONS.filter((_,i)=>S.done[i]).flatMap(l=>l.chords||[]));
+  const can=pairs.filter(p=>p.every(c=>known.has(c)));const pair=(can.length?can:[pairs[0]]).sort((a,b)=>(S.best[[a[0],a[1]].sort().join("-")]||0)-(S.best[[b[0],b[1]].sort().join("-")]||0))[0];
+  items.push({k:"chg",min:2,t:"Chord changes: "+pair[0]+" ⇄ "+pair[1],d:(S.best[[pair[0],pair[1]].sort().join("-")]?"Beat your best of "+S.best[[pair[0],pair[1]].sort().join("-")]+".":"One minute, count every clean switch."),go:()=>openTrainer(pair[0],pair[1])});
+  const strum=STRUMS.find(s=>(S.best["strum:"+s.id]||0)<80)||STRUMS[STRUMS.length-1];items.push({k:"rhy",min:3,t:"Rhythm: "+strum.name,d:S.best["strum:"+strum.id]?"Best "+S.best["strum:"+strum.id]+"% on time. Aim for 80%.":"Strum along and watch for green.",go:()=>openRT(strum.id)});
+  if(L)items.push({k:"les",min:L.m||8,t:"Lesson: "+L.t,d:L.goal,go:()=>{const mi=Math.max(0,MODULES.findIndex(M=>M.l.includes(ni)));openModule(mi);}});
+  const songs=S.tabs.filter(t=>t.kind==="gp"||t.text);const song=songs.slice().sort((a,b)=>((b.runs||[]).slice(-1)[0]||[0])[0]-((a.runs||[]).slice(-1)[0]||[0])[0])[0];
+  items.push(song?{k:"song",min:6,t:"Song: "+song.title.split(" · ")[0],d:(song.runs&&song.runs.length?"Last run "+song.runs[song.runs.length-1][1]+"%. Loop the bars that trip you up.":"Start on Easy with Wait mode."),go:()=>openSong(song.id)}:{k:"song",min:6,t:"Find a song you love",d:"Search it on the Find a tab page.",go:()=>show("songs")});
+  return items;}
+function renderPlan(){const box=$("planBox");if(!box)return;const k=dkey(new Date());S.plan=S.plan&&S.plan.d===k?S.plan:{d:k,done:{}};const items=planItems();const tot=items.reduce((a,i)=>a+i.min,0);const dn=items.filter(i=>S.plan.done[i.k]).length;
+  const mins=Math.round(S.mins[k]||0);box.innerHTML='<div class="row" style="justify-content:space-between"><span class="lbl">Today\'s practice · about '+tot+' min</span><span class="lbl" style="color:#64D2FF">'+(mins?mins+" min played":dn+" of "+items.length)+'</span></div>';
+  items.forEach(it=>{const row=document.createElement("button");row.type="button";row.className="planrow"+(S.plan.done[it.k]?" done":"");
+    row.innerHTML='<i class="pchk">'+(S.plan.done[it.k]?CHECK:"")+'</i><div><b>'+esc(it.t)+'</b><span>'+esc(it.d)+'</span></div><em>'+it.min+' min</em>';
+    row.querySelector(".pchk").addEventListener("click",e=>{e.stopPropagation();S.plan.done[it.k]=!S.plan.done[it.k];save();if(S.plan.done[it.k])logDay();renderPlan();});
+    row.addEventListener("click",()=>{S.plan.done[it.k]=true;save();logDay();renderPlan();it.go();});box.appendChild(row);});
+  if(dn===items.length)box.insertAdjacentHTML("beforeend",'<div class="small" style="color:#30D158;text-align:center">All done today. Great session!</div>');}
+/* progress in Profile: the last 4 weeks, and how each song is coming along */
+function renderProgress(){const box=$("progBox");if(!box)return;const days=new Set(S.days);const today=new Date();let cells="";let tot=0,act=0;
+  for(let i=27;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const k=dkey(d);const m=S.mins[k]||0;tot+=m;if(days.has(k)||m)act++;const lv=m>=20?4:m>=10?3:m>=3?2:(days.has(k)||m)?1:0;cells+='<i class="hm l'+lv+'" title="'+k+': '+Math.round(m)+' min"></i>';}
+  let h='<div class="row" style="justify-content:space-between"><b>Last 4 weeks</b><span class="small muted">'+act+' days · '+Math.round(tot)+' min</span></div><div class="heat">'+cells+'</div>';
+  const songs=S.tabs.filter(t=>t.runs&&t.runs.length).sort((a,b)=>b.runs[b.runs.length-1][0]-a.runs[a.runs.length-1][0]).slice(0,5);
+  if(songs.length){h+='<b style="margin-top:6px">Your songs</b>';songs.forEach(t=>{const r=t.runs.slice(-12);const W=110,H=30;const pts=r.map((x,i)=>(r.length===1?W/2:i*W/(r.length-1)).toFixed(1)+","+(H-2-(x[1]/100)*(H-4)).toFixed(1)).join(" ");
+      const last=r[r.length-1],first=r[0];h+='<div class="sprog"><div><div class="t">'+esc(t.title.split(" · ")[0])+'</div><div class="small muted">'+DIFF_NAMES[last[2]||4]+' · last '+last[1]+'%'+(r.length>1?' · '+(last[1]>=first[1]?'up ':'down ')+Math.abs(last[1]-first[1])+' pts':'')+'</div></div><svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'"><polyline points="'+pts+'" fill="none" stroke="#64D2FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';});}
+  else h+='<div class="small muted">Play a song with the mic on, and your scores show up here.</div>';box.innerHTML=h;}
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
@@ -3417,7 +3458,7 @@ function buildDeck(){const deck=document.createElement("div");deck.className="de
     pg.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>deckGo(+b.dataset.go)));});
   const put=(id,el)=>{if(el)DECK.els[id].appendChild(el);};
   /* today */
-  put("today",$("installCard"));const tb=document.createElement("div");tb.id="todayBox";tb.className="todaybox";put("today",tb);
+  put("today",$("installCard"));const tb=document.createElement("div");tb.id="todayBox";tb.className="todaybox";put("today",tb);const pl=document.createElement("div");pl.id="planBox";pl.className="planbox";put("today",pl);
   /* listening now */
   put("find",$("npCard"));
   /* song master */
@@ -3449,7 +3490,7 @@ function renderToday(){const box=$("todayBox");if(!box)return;const ni=nextLesso
       '<text x="95" y="98" text-anchor="middle" class="rnum">'+pct+'%</text><text x="95" y="124" text-anchor="middle" class="rlbl">of your journey</text></svg></div>'+
     '<div class="row" style="gap:10px;flex-wrap:nowrap"><div class="inner stat2"><div class="lbl">Lessons</div><b>'+done+' of '+LESSONS.length+'</b></div><div class="inner stat2"><div class="lbl">Best score</div><b>'+(best?best+"%":"–")+'</b></div></div>'+
     '<button class="btn w" id="todayGo">'+(ni<0?"Review lessons":L.m?"Continue lesson · "+L.m+" min":"Continue lesson")+'</button><button class="btn g" id="todayAll">All lessons</button>';
-  $("todayGo").addEventListener("click",()=>openModule(mi));$("todayAll").addEventListener("click",()=>{renderModules();openScreen("s-journey");});}
+  $("todayGo").addEventListener("click",()=>openModule(mi));try{renderPlan();}catch(e){}$("todayAll").addEventListener("click",()=>{renderModules();openScreen("s-journey");});}
 function renderPlay(){const box=$("playBox");if(!box)return;const t=TP.tab;if(!t||t.builtin||!S.tabs.length){box.innerHTML='<div class="phero"><div class="vinyl"><span>♪</span></div><div><div class="ptl">No song yet</div><div class="lbl">Find a tab and it opens here.</div></div></div><button class="btn w" id="playFind">Find a tab</button>';$("playFind").addEventListener("click",()=>deckGo(PAGES.findIndex(p=>p.id==="find")));return;}artFor();const m=artMeta();
   const sub=t.kind==="gp"?[m.artist,(t.gp.tracks[t.ti||0]||{}).name].filter(Boolean).join(" · "):"Built in · "+((TP.parsed&&TP.parsed.events.length)||0)+" notes";
   const ini=(m.title||t.title||"F").split(/\s+/).filter(Boolean).slice(0,2).map(s=>s[0].toUpperCase()).join("");
@@ -3465,7 +3506,8 @@ const TOUR_STEPS=[
   {t:"Welcome to Fretwork",b:"A quick tour of everything in the app. It takes about 3 minutes, and you can leave any time with Skip. You can take it again from your Profile.",hero:true},
   {p:"today",s:".pg[data-p='today'] .dots",t:"Your pages",b:"Fretwork has six pages. Swipe left or right to move between them, tap a dot to jump to one, or tap Next section at the bottom."},
   {p:"today",s:"#todayBox .ring",t:"Today",b:"Your progress through the lessons. Do a little each day to build a streak."},
-  {p:"today",s:"#todayGo",t:"Continue your lesson",b:"Tap this to pick up where you left off. All lessons opens the full list."},
+  {p:"today",s:"#todayGo",t:"Continue your lesson",b:"Tap this to pick up where you left off. All lessons opens the full course: 36 lessons from your first chord to soloing."},
+  {p:"today",s:"#planBox",t:"Today's practice",b:"A short plan made for you each day: a warm-up, chord changes, rhythm, your next lesson and a song. Tap one to start it. Tick them off as you go."},
   {p:"find",s:"#npCard",t:"Listening now",b:"When a song plays on your phone, in Spotify or any music app, it shows up here. Tap it to find its tab in one step."},
   {p:"find",s:"#gpSearchBtn",up:"#gpArtist",t:"Search for a tab",b:"Type an artist and a song, then tap Search. Fretwork checks 3 free Guitar Pro sites at once and puts the best match on top."},
   {p:"find",s:"label[for='impFile'].btn,#importSec label.btn",t:"Open a file",b:"Already have a tab? Open a Guitar Pro file, a PDF or a text tab from your phone."},
@@ -3486,6 +3528,7 @@ const TOUR_STEPS=[
   {p:"tune",s:"#tzBoard",t:"Hear each string",b:"Tap a string to hear the note it should be. It turns green when you match it."},
   {p:"tune",s:".tzpanel",t:"Other tunings",b:"Tap SELECT for tunings like Drop D or half step down. Fretwork warns you if a song needs a different one."},
   {p:"tools",s:".pg[data-p='tools'] .gin",t:"Tools",b:"Chord charts, scales, the Rhythm Trainer for strumming, Chord Drill for quick chord changes, the Ear Trainer, the Song Builder and more."},
+  {p:"me",s:"#progBox",t:"Your progress",b:"Your last four weeks of practice, and how your score on each song is climbing."},
   {p:"me",s:"#lvlRow",t:"Your level",b:"Set how much you can play, and Fretwork suggests songs that fit."},
   {p:"me",s:"#pMic",t:"Microphone",b:"Lets Fretwork hear you play. The sound is checked on your phone and never sent anywhere."},
   {p:"me",s:"#bkCard",t:"Backup",b:"Keeps your songs and progress safe. With your lab connected, it backs up on its own once a day."},
