@@ -707,6 +707,21 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 .prow.next i{background:var(--acc);color:#000}.prow.done i{background:#30D158}.prow .t{font:600 15.5px var(--sans)}.prow .m{font-size:12.5px;color:rgba(255,255,255,.55)}
 .mprev .mopen{margin-top:4px}
 #s-journey::before{background:radial-gradient(70% 40% at 30% 18%,color-mix(in srgb,var(--acc,#BF5AF2) 26%,transparent),transparent 70%),radial-gradient(55% 40% at 95% 70%,rgba(10,132,255,.14),transparent 70%),url(paper.jpg) center/cover no-repeat,#000}
+
+/* today's practice carousel */
+.pcar{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:4px 9%;margin:0 -20px;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.pcar::-webkit-scrollbar{display:none}
+.pcard{position:relative;overflow:hidden;flex:0 0 82%;scroll-snap-align:center;display:grid;gap:8px;align-content:start;min-height:212px;padding:16px 18px 18px;border-radius:26px;color:#fff;
+  background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.03) 55%,rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 14px 30px rgba(0,0,0,.4);transition:transform .12s linear,opacity .12s linear}
+.pcard .glow{position:absolute;right:-50px;top:-60px;width:200px;height:200px;border-radius:50%;background:var(--acc);opacity:.25;filter:blur(46px);pointer-events:none}
+.ptop{position:relative;display:flex;align-items:center;gap:10px}.pic{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--acc) 22%,transparent)}
+.pic svg{width:22px;height:22px;fill:none;stroke:var(--acc);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pstep{flex:1;font:600 12.5px var(--sans);color:rgba(255,255,255,.6)}
+.pcard .pchk{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:transparent;display:grid;place-items:center;padding:0}
+.pcard.done .pchk{background:#30D158;border-color:#30D158}.pcard.done b{color:rgba(255,255,255,.6);text-decoration:line-through}
+.pcard b{position:relative;font:700 20px/1.2 var(--sans);margin-top:4px}.pcard .pd{position:relative;font-size:14px;line-height:1.4;color:rgba(255,255,255,.68)}
+.pcard .pgo{position:relative;margin-top:auto}
+.pdots{margin-top:-2px}
 </style>
 </head>
 <body>
@@ -3578,13 +3593,26 @@ function planItems(){const ni=nextLessonIdx();const L=ni>=0?LESSONS[ni]:null;con
   const songs=S.tabs.filter(t=>t.kind==="gp"||t.text);const song=songs.slice().sort((a,b)=>((b.runs||[]).slice(-1)[0]||[0])[0]-((a.runs||[]).slice(-1)[0]||[0])[0])[0];
   items.push(song?{k:"song",min:6,t:"Song: "+song.title.split(" · ")[0],d:(song.runs&&song.runs.length?"Last run "+song.runs[song.runs.length-1][1]+"%. Loop the bars that trip you up.":"Start on Easy with Wait mode."),go:()=>openSong(song.id)}:{k:"song",min:6,t:"Find a song you love",d:"Search it on the Find a tab page.",go:()=>show("songs")});
   return items;}
+const PLANIC={warm:'<path d="M5 19V5M10 19V9M15 19V7M20 19V11"/>',chg:'<path d="M7 7h11l-3-3M17 17H6l3 3"/>',rhy:'<path d="M7 4v12M7 16l-3-3M7 16l3-3M17 20V8M17 8l-3 3M17 8l3 3"/>',les:'<path d="M4 5h7a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4zM20 5h-4a2 2 0 0 0-2 2"/>',song:'<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>'};
+const PLANCOL={warm:"#FF9F0A",chg:"#64D2FF",rhy:"#30D158",les:"#BF5AF2",song:"#FF375F"};
 function renderPlan(){const box=$("planBox");if(!box)return;const k=dkey(new Date());S.plan=S.plan&&S.plan.d===k?S.plan:{d:k,done:{}};const items=planItems();const tot=items.reduce((a,i)=>a+i.min,0);const dn=items.filter(i=>S.plan.done[i.k]).length;
-  const mins=Math.round(S.mins[k]||0);box.innerHTML='<div class="row" style="justify-content:space-between"><span class="lbl">Today\'s practice · about '+tot+' min</span><span class="lbl" style="color:#64D2FF">'+(mins?mins+" min played":dn+" of "+items.length)+'</span></div>';
-  items.forEach(it=>{const row=document.createElement("button");row.type="button";row.className="planrow"+(S.plan.done[it.k]?" done":"");
-    row.innerHTML='<i class="pchk">'+(S.plan.done[it.k]?CHECK:"")+'</i><div><b>'+esc(it.t)+'</b><span>'+esc(it.d)+'</span></div><em>'+it.min+' min</em>';
-    row.querySelector(".pchk").addEventListener("click",e=>{e.stopPropagation();S.plan.done[it.k]=!S.plan.done[it.k];save();if(S.plan.done[it.k])logDay();renderPlan();});
-    row.addEventListener("click",()=>{S.plan.done[it.k]=true;save();logDay();renderPlan();it.go();});box.appendChild(row);});
-  if(dn===items.length)box.insertAdjacentHTML("beforeend",'<div class="small" style="color:#30D158;text-align:center">All done today. Great session!</div>');}
+  const mins=Math.round(S.mins[k]||0);const keep=box.querySelector(".pcar");const keepLeft=keep?keep.scrollLeft:null;
+  box.innerHTML='<div class="row" style="justify-content:space-between"><span class="lbl">Today\'s practice · about '+tot+' min</span><span class="lbl" style="color:#64D2FF">'+dn+' of '+items.length+(mins?' · '+mins+' min played':'')+'</span></div><div class="pcar"></div><div class="mdots pdots"></div>';
+  const car=box.querySelector(".pcar"),dots=box.querySelector(".pdots");
+  items.forEach((it,n)=>{const done=!!S.plan.done[it.k];const c=document.createElement("div");c.className="pcard"+(done?" done":"");c.style.setProperty("--acc",PLANCOL[it.k]||"#64D2FF");
+    c.innerHTML='<div class="glow"></div><div class="ptop"><span class="pic"><svg viewBox="0 0 24 24">'+(PLANIC[it.k]||"")+'</svg></span><span class="pstep">'+(n+1)+' of '+items.length+' · '+it.min+' min</span><button class="pchk" aria-label="Mark done">'+(done?CHECK:"")+'</button></div>'+
+      '<b>'+esc(it.t)+'</b><span class="pd">'+esc(it.d)+'</span><button class="btn '+(done?"g":"w")+' pgo">'+(done?"Do it again":"Start")+'</button>';
+    c.querySelector(".pchk").addEventListener("click",e=>{e.stopPropagation();S.plan.done[it.k]=!S.plan.done[it.k];save();if(S.plan.done[it.k])logDay();renderPlan();});
+    c.querySelector(".pgo").addEventListener("click",()=>{S.plan.done[it.k]=true;save();logDay();renderPlan();it.go();});car.appendChild(c);
+    const d=document.createElement("button");d.type="button";d.setAttribute("aria-label",it.t);d.addEventListener("click",()=>pcGo(n));dots.appendChild(d);});
+  if(dn===items.length){const c=document.createElement("div");c.className="pcard alldone";c.style.setProperty("--acc","#30D158");c.innerHTML='<div class="glow"></div><div class="ptop"><span class="pic"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span></div><b>All done today</b><span class="pd">Great session. Come back tomorrow to keep your streak going.</span>';car.appendChild(c);const d=document.createElement("button");d.type="button";dots.appendChild(d);}
+  let tm=0;car.addEventListener("scroll",()=>{clearTimeout(tm);tm=setTimeout(pcSettle,70);pcTilt();},{passive:true});
+  const first=items.findIndex(i=>!S.plan.done[i.k]);requestAnimationFrame(()=>{if(keepLeft!=null&&!(dn===items.length)){car.scrollLeft=keepLeft;pcSettle();setTimeout(()=>pcGo(first<0?items.length:first),250);}else pcGo(first<0?items.length:first,true);});}
+function pcCards(){return [...document.querySelectorAll("#planBox .pcard")];}
+function pcGo(i,instant){const car=document.querySelector("#planBox .pcar");const c=pcCards()[Math.max(0,Math.min(i,pcCards().length-1))];if(!car||!c)return;car.scrollTo({left:c.offsetLeft-(car.clientWidth-c.offsetWidth)/2,behavior:instant?"auto":"smooth"});if(instant)pcSettle();}
+function pcTilt(){const car=document.querySelector("#planBox .pcar");if(!car)return;const mid=car.scrollLeft+car.clientWidth/2;pcCards().forEach(c=>{const d=Math.min(1,Math.abs((c.offsetLeft+c.offsetWidth/2-mid)/c.offsetWidth));c.style.transform="scale("+(1-d*.07)+")";c.style.opacity=String(1-d*.4);});}
+function pcSettle(){const car=document.querySelector("#planBox .pcar");if(!car)return;const mid=car.scrollLeft+car.clientWidth/2;let best=0,bd=1e9;pcCards().forEach((c,k)=>{const d=Math.abs(c.offsetLeft+c.offsetWidth/2-mid);if(d<bd){bd=d;best=k;}});pcTilt();
+  document.querySelectorAll("#planBox .pdots button").forEach((d,k)=>d.classList.toggle("on",k===best));}
 /* progress in Profile: the last 4 weeks, and how each song is coming along */
 function renderProgress(){const box=$("progBox");if(!box)return;const days=new Set(S.days);const today=new Date();let cells="";let tot=0,act=0;
   for(let i=27;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const k=dkey(d);const m=S.mins[k]||0;tot+=m;if(days.has(k)||m)act++;const lv=m>=20?4:m>=10?3:m>=3?2:(days.has(k)||m)?1:0;cells+='<i class="hm l'+lv+'" title="'+k+': '+Math.round(m)+' min"></i>';}
