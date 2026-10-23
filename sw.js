@@ -1,6 +1,6 @@
 // Fretwork offline helper: keeps a copy of the app so it opens without internet,
 // and receives tabs shared to the app from other apps.
-const CACHE = "fretwork-v50";
+const CACHE = "fretwork-v51";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {

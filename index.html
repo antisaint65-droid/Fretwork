@@ -847,11 +847,14 @@ body.in-screen .dhead{visibility:hidden}
     <p class="small muted" style="margin:0">Pulls the guitar out of a song and writes a draft Guitar Pro tab, using free computers on your private GitHub. Takes about 5 to 10 minutes per song. The draft gets you most of the way; fix notes as you learn it.</p>
     <div id="labBody">
       <div id="labSetup">
-        <label class="small muted" for="labToken">Paste the key you made on GitHub (starts with github_pat_). It only works for your private lab repo.</label>
-        <input class="field" id="labToken" type="password" placeholder="github_pat_…" autocapitalize="off" autocomplete="off" spellcheck="false">
-        <input class="field" id="labRepo" placeholder="Repo name (fretwork-lab)" autocapitalize="off" autocomplete="off" spellcheck="false">
-        <div class="row"><button class="btn" id="labConnect">Connect lab</button></div>
+        <label class="small muted" for="labInvite">Got an invite code? Type it here. That's all you need.</label>
+        <div class="row" style="flex-wrap:nowrap"><input class="field" id="labInvite" placeholder="Invite code" autocapitalize="characters" autocomplete="off" spellcheck="false"><button class="btn w" id="labJoin">Join</button></div>
         <div class="status" id="labSetupMsg"></div>
+        <details class="drop"><summary>Use my own GitHub lab</summary><div class="dropbody">
+          <label class="small muted" for="labToken">Paste the key you made on GitHub (starts with github_pat_). It only works for your private lab repo.</label>
+          <input class="field" id="labToken" type="password" placeholder="github_pat_…" autocapitalize="off" autocomplete="off" spellcheck="false">
+          <input class="field" id="labRepo" placeholder="Repo name (fretwork-lab)" autocapitalize="off" autocomplete="off" spellcheck="false">
+          <div class="row"><button class="btn" id="labConnect">Connect lab</button></div></div></details>
       </div>
       <div id="labMain" hidden>
         <div class="row" style="flex-wrap:nowrap"><input class="field" id="labTitle" placeholder="Song" autocapitalize="words"><input class="field" id="labArtist" placeholder="Artist" autocapitalize="words"></div>
@@ -3596,13 +3599,24 @@ function idb(){if(IDB.db)return Promise.resolve(IDB.db);return new Promise((res,
 async function idbPut(k,v){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction("audio","readwrite");tx.objectStore("audio").put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
 async function idbGet(k){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction("audio","readonly");const q=tx.objectStore("audio").get(k);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error);});}
 const LAB={rec:null,chunks:[],blob:null,ext:"",t0:0,timer:0,poll:0};
-const labOk=()=>!!(S.lab&&S.lab.token&&S.lab.repo);
+/* the shared lab relay (Shaun's Cloudflare Worker); friends join with an invite code */
+const LAB_RELAY="";
+const labOwn=()=>!!(S.lab&&S.lab.token&&S.lab.repo);
+const labGuest=()=>!labOwn()&&!!(S.labInvite&&S.labInvite.code&&(S.labInvite.url||LAB_RELAY));
+const labOk=()=>labOwn()||labGuest();
+const relayUrl=()=>(S.labInvite&&S.labInvite.url)||LAB_RELAY;
+async function relay(path,o){o=o||{};const r=await fetch(relayUrl()+path,{method:o.method||"GET",cache:"no-store",headers:Object.assign({"X-Invite":S.labInvite.code},o.headers||{}),body:o.body});
+  if(o.raw&&r.ok)return new Uint8Array(await r.arrayBuffer());let j={};try{j=await r.json();}catch(e){}
+  if(r.status===403&&/invite/i.test(j.error||"")){S.labInvite=null;save();labUI();}if(!r.ok){const e=new Error(j.error||"The lab said "+r.status);e.status=r.status;throw e;}return j;}
+async function labJoin(){const code=$("labInvite").value.trim().toUpperCase();const msg=$("labSetupMsg");if(!code){toast("Type the invite code you were sent.",2500);return;}if(!LAB_RELAY){msg.textContent="The shared lab isn't switched on yet.";return;}
+  msg.textContent="Checking…";S.labInvite={code};try{const j=await relay("/ping");save();$("labInvite").value="";msg.textContent="";toast("You're in! You can make "+j.limit+" tabs a day.",3000);labUI();}
+  catch(e){S.labInvite=null;msg.textContent=e.status===403?"That code didn't work. Check it with the person who sent it.":"Couldn't reach the lab. Check your internet.";}}
 async function gh(path,opt){opt=opt||{};const r=await fetch("https://api.github.com/repos/"+S.lab.repo+path,{method:opt.method||"GET",cache:"no-store",
     headers:Object.assign({Authorization:"Bearer "+S.lab.token,Accept:opt.raw?"application/vnd.github.raw+json":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},opt.body?{"Content-Type":"application/json"}:{}),body:opt.body?JSON.stringify(opt.body):undefined});
   if(r.status===404)return null;if(!r.ok){const t=await r.text().catch(()=>"");const e=new Error("GitHub said "+r.status+(t?": "+t.slice(0,120):""));e.status=r.status;throw e;}return opt.raw?new Uint8Array(await r.arrayBuffer()):r.status===204?{}:r.json();}
 const b64of=blob=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(",")[1]);fr.onerror=()=>rej(fr.error);fr.readAsDataURL(blob);});
 const b64txt=s=>btoa(unescape(encodeURIComponent(s)));
-function labUI(){const box=$("labBody");if(!box)return;const ok=labOk();$("labSetup").hidden=ok;$("labMain").hidden=!ok;$("labWho").textContent=ok?"Connected to "+S.lab.repo:"";
+function labUI(){const box=$("labBody");if(!box)return;const ok=labOk();$("labSetup").hidden=ok;$("labMain").hidden=!ok;$("labWho").textContent=ok?(labOwn()?"Connected to "+S.lab.repo:"Using the shared lab with your invite code"):"";
   const np=NP.cur;if(np&&np.title&&!$("labTitle").value){$("labTitle").value=npClean(np.title);$("labArtist").value=npMainArtist(np.artist||"");}
   $("labSend").disabled=!LAB.blob;$("labRecBtn").textContent=LAB.rec?"Stop recording":"Record the song";$("labRecBtn").classList.toggle("rec",!!LAB.rec);
   $("labHave").textContent=LAB.blob?(LAB.name||"Recording")+" · "+(LAB.blob.size/1048576).toFixed(1)+" MB ready to send":"";labJobsUI();}
@@ -3621,8 +3635,12 @@ async function labRecord(){if(LAB.rec){LAB.rec.stop();return;}if(!(await needMic
   toast("Recording. Play the song out loud, then tap Stop.",3000);}
 function labFile(f){if(!f)return;if(f.size>60*1048576){toast("That file is over 60 MB. Pick a smaller one.",3500);return;}LAB.blob=f;LAB.name=f.name;LAB.ext=(f.name.match(/\.([a-z0-9]{2,4})$/i)||[,"mp3"])[1].toLowerCase();
   if(!$("labTitle").value)$("labTitle").value=niceTitle(f.name).replace(/^\d+\s*[-.]?\s*/,"");labUI();}
-async function labSend(){if(!LAB.blob||!labOk())return;const title=$("labTitle").value.trim()||"My recording",artist=$("labArtist").value.trim();const id="j"+Date.now().toString(36);
+async function labSend(){if(!LAB.blob||!labOk())return;const title=$("labTitle").value.trim()||"My recording",artist=$("labArtist").value.trim();let id="j"+Date.now().toString(36);
   const btn=$("labSend");btn.disabled=true;btn.textContent="Sending…";
+  if(labGuest()){try{const b=await b64of(LAB.blob);const j=await relay("/job?title="+encodeURIComponent(title)+"&artist="+encodeURIComponent(artist)+"&ext="+LAB.ext,{method:"POST",body:b,headers:{"X-Len":String(b.length),"Content-Type":"text/plain"}});id=j.id;
+      await idbPut(id+":full",LAB.blob);S.labJobs=S.labJobs||[];S.labJobs.unshift({id,title,artist,at:Date.now(),st:"queued",via:"relay"});save();LAB.blob=null;$("labTitle").value="";$("labArtist").value="";
+      toast("Sent. It takes about 5 to 10 minutes."+(j.left!=null?" "+j.left+" left today.":""),3500);labPollSoon();}
+    catch(e){toast(e.message||"Couldn't send it.",5000);}btn.textContent="Make the tab";labUI();return;}
   try{await gh("/contents/jobs/"+id+"/job.json",{method:"PUT",body:{message:"job "+id,content:b64txt(JSON.stringify({title,artist}))}});
     await gh("/contents/jobs/"+id+"/input."+LAB.ext,{method:"PUT",body:{message:"input "+id,content:await b64of(LAB.blob)}});
     await idbPut(id+":full",LAB.blob);S.labJobs=S.labJobs||[];S.labJobs.unshift({id,title,artist,at:Date.now(),st:"queued"});save();LAB.blob=null;$("labTitle").value="";$("labArtist").value="";
@@ -3637,14 +3655,16 @@ function labJobsUI(){const box=$("labJobs");if(!box)return;const L=(S.labJobs||[
     else if(j.st==="error"){b.textContent="Remove";b.addEventListener("click",()=>{S.labJobs=S.labJobs.filter(x=>x!==j);save();labJobsUI();});}else{b.textContent="Check";b.addEventListener("click",()=>labPoll());}
     row.appendChild(b);box.appendChild(row);});}
 async function labPoll(){if(!labOk())return;const open=(S.labJobs||[]).filter(j=>["queued","separating","transcribing"].includes(j.st));if(!open.length){clearInterval(LAB.poll);LAB.poll=0;return;}
-  for(const j of open){try{const out=await gh("/contents/jobs/"+j.id+"/out");const names=(out||[]).map(f=>f.name);
+  for(const j of open){if(j.via==="relay"){try{const r=await relay("/status?id="+encodeURIComponent(j.id));j.st=r.st==="error"?"error":r.st||j.st;if(r.st==="error")j.err="the recording couldn't be turned into a tab";if(j.st==="ready")toast("“"+j.title+"” is ready. Tap Get.",4000);}catch(e){}continue;}
+    try{const out=await gh("/contents/jobs/"+j.id+"/out");const names=(out||[]).map(f=>f.name);
       if(names.includes("meta.json"))j.st="ready";else if(names.includes("error.txt")){j.st="error";try{const t=new TextDecoder().decode(await gh("/contents/jobs/"+j.id+"/out/error.txt",{raw:true}));j.err=/no audio|Invalid data|could not/i.test(t)?"the recording couldn't be read":"see error.txt in your lab repo";}catch(e){}}
       else{const st=await gh("/contents/jobs/"+j.id+"/status.json",{raw:true});if(st){try{j.st=JSON.parse(new TextDecoder().decode(st)).stage||j.st;}catch(e){}}}
       if(j.st==="ready")toast("“"+j.title+"” is ready. Tap Get.",4000);}catch(e){if(e.status===401){toast("The lab key stopped working. Connect again.",4000);S.lab=null;save();labUI();return;}}}
   save();labJobsUI();}
 function labPollSoon(){labPoll();if(!LAB.poll)LAB.poll=setInterval(labPoll,20000);}
 async function labImport(j,btn){btn.disabled=true;btn.textContent="Getting…";
-  try{const p="/contents/jobs/"+j.id+"/out/";const [gp5,meta,gtr,bk]=await Promise.all([gh(p+"tab.gp5",{raw:true}),gh(p+"meta.json",{raw:true}),gh(p+"guitar.mp3",{raw:true}),gh(p+"backing.mp3",{raw:true})]);
+  try{const p="/contents/jobs/"+j.id+"/out/";const get=n=>j.via==="relay"?relay("/file?id="+encodeURIComponent(j.id)+"&name="+n,{raw:true}).catch(()=>null):gh(p+n,{raw:true});
+    const [gp5,meta,gtr,bk]=await Promise.all([get("tab.gp5"),get("meta.json"),get("guitar.mp3"),get("backing.mp3")]);if(!gp5||!meta)throw new Error("the tab isn't there yet");
     const m=JSON.parse(new TextDecoder().decode(meta));if(gtr)await idbPut(j.id+":guitar",new Blob([gtr],{type:"audio/mpeg"}));if(bk)await idbPut(j.id+":backing",new Blob([bk],{type:"audio/mpeg"}));
     const before=S.tabs.length;await importGp(gp5,j.title+(j.artist?" - "+j.artist:""));const t=S.tabs[S.tabs.length-1];
     if(t&&S.tabs.length>before){t.lab=j.id;t.title=j.title+(j.artist?" · "+j.artist:"");if(Array.isArray(m.syncPts)&&m.syncPts.length)t.syncPts=m.syncPts;t.tiPicked=1;j.tab=t.id;}
@@ -3661,7 +3681,7 @@ function labMode(k){const a=LABP.el;if(!a||!LABP.urls[k])return;const t=a.curren
   a.addEventListener("loadedmetadata",()=>{a.currentTime=t;if(pl)a.play().catch(()=>{});},{once:true});labModeUI();}
 function labModeUI(){document.querySelectorAll("#tpLabRow [data-lm]").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.lm===LABP.mode?"true":"false");b.hidden=!LABP.urls[b.dataset.lm];});}
 $("labConnect").addEventListener("click",labConnect);$("labRecBtn").addEventListener("click",labRecord);$("labFile").addEventListener("change",e=>{labFile(e.target.files[0]);e.target.value="";});
-$("labSend").addEventListener("click",labSend);$("labForget").addEventListener("click",()=>{S.lab=null;save();labUI();});
+$("labSend").addEventListener("click",labSend);$("labForget").addEventListener("click",()=>{S.lab=null;S.labInvite=null;save();labUI();});$("labJoin").addEventListener("click",labJoin);
 document.querySelectorAll("#tpLabRow [data-lm]").forEach(b=>b.addEventListener("click",()=>labMode(b.dataset.lm)));
 setTimeout(()=>{labUI();if((S.labJobs||[]).some(j=>["queued","separating","transcribing"].includes(j.st)))labPollSoon();},0);
 $("tpDiffChip").addEventListener("click",()=>{if(!TP.tab)return;const l=diffLevel();diffApply(l>=4?1:l+1);});
