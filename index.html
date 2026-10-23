@@ -623,6 +623,26 @@ body.lefty #hwCv,body.lefty #neckCv{transform:scaleX(-1)}
 body.lefty .chord svg,body.lefty #chBig svg,body.lefty .fbscroll svg,body.lefty .vis svg{transform:scaleX(-1)}
 body.lefty .chord svg text,body.lefty #chBig svg text,body.lefty .fbscroll svg text,body.lefty .vis svg text{transform:scaleX(-1);transform-box:fill-box;transform-origin:center}
 body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
+
+/* music theory */
+.thbody{display:grid;gap:14px}.thbody p{margin:0;font-size:16px;line-height:1.5;color:rgba(255,255,255,.85)}.thbody p b{color:#fff}
+.thcard{border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:12px;display:grid;gap:6px}
+.piano{width:100%;height:auto;display:block}.piano .pk{cursor:pointer}.piano .w rect{fill:#F2F2F4}.piano .w text{fill:#555;font:600 26px var(--sans)}
+.piano .b rect{fill:#151517;stroke:#000}.piano .b text{fill:#aaa;font:600 18px var(--sans)}
+.piano .w.on rect{fill:#64D2FF}.piano .w.on text{fill:#00202c}.piano .b.on rect{fill:#0A84FF}.piano .b.on text{fill:#fff}
+.thscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.gstr{width:640px;max-width:none;height:auto;display:block}.gstr .wood{fill:#3d2c21}.gstr .str{stroke:#cfd2d6;stroke-width:3}.gstr .fret{stroke:#9a9ea3;stroke-width:2.4}
+.gstr .gn{cursor:pointer}.gstr .gn circle{fill:rgba(20,20,22,.9);stroke:rgba(255,255,255,.35)}.gstr .gn text{fill:#fff;font:700 12px var(--sans)}.gstr .gn .fn{fill:rgba(255,255,255,.5);font-size:12px}
+.gstr .gn.on circle{fill:#64D2FF;stroke:#fff}.gstr .gn.on text:not(.fn){fill:#00202c}
+.cofwrap{place-items:center}.cof{width:100%;max-width:340px;height:auto}.cof .cs{cursor:pointer}
+.cof .outer{fill:rgba(255,255,255,.07);stroke:#000;stroke-width:2}.cof .inner{fill:rgba(255,255,255,.035);stroke:#000;stroke-width:2}
+.cof .fam .outer{fill:rgba(100,210,255,.28)}.cof .fam .inner{fill:rgba(100,210,255,.14)}.cof .sel .outer{fill:#64D2FF}.cof .sel .inner{fill:rgba(100,210,255,.5)}
+.cof .maj{fill:#fff;font:700 19px var(--sans)}.cof .min{fill:rgba(255,255,255,.7);font:600 12px var(--sans)}.cof .sel .maj{fill:#00202c}
+.cof .hub{fill:#0c0c0e;stroke:rgba(255,255,255,.15)}.cof .hk{fill:#fff;font:700 30px var(--sans)}.cof .ha{fill:rgba(255,255,255,.6);font:600 13px var(--sans)}
+.thkey{display:grid;gap:2px}.thkey b{font:700 22px var(--sans)}.thkey span{color:rgba(255,255,255,.65);font-size:14px}
+.thchords{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.thc{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;border-radius:16px;padding:10px 4px;font:700 17px var(--sans);display:grid;gap:2px}
+.thc em{font-style:normal;font-size:12px;color:rgba(255,255,255,.55);font-weight:600}.thc.big{background:rgba(100,210,255,.18);border-color:rgba(100,210,255,.5)}
+.thsteps{display:flex;gap:6px;justify-content:center}.thsteps span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:700 15px var(--sans)}.thsteps .W{background:rgba(100,210,255,.25);color:#64D2FF}.thsteps .H{background:rgba(255,159,10,.25);color:#FF9F0A}
+.thlist{margin:0;padding-left:20px;display:grid;gap:6px;color:rgba(255,255,255,.75);font-size:14.5px;line-height:1.45}.thlist b{color:#fff}
 </style>
 </head>
 <body>
@@ -731,6 +751,7 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
       <button class="tool" data-open="s-chord"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Guitar Chord Finder</button>
       <button class="tool" data-open="s-scales"><svg viewBox="0 0 24 24"><path d="M4 18l4-4 4 2 4-6 4-3"/><circle cx="4" cy="18" r="1"/><circle cx="20" cy="7" r="1"/></svg>Scales</button>
       <button class="tool" data-open="s-neck"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M8 7v10M13 7v10M18 7v10"/></svg>Fretboard</button>
+      <button class="tool" data-open="s-theory"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5M21 12h-5M12 21v-5M3 12h5"/></svg>Music Theory</button>
       <button class="tool" data-open="s-jam"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><circle cx="17" cy="9" r="3"/><path d="M12 15V4l8-2M5 21h6"/></svg>Jam Mode</button>
       <button class="tool" data-open="s-strum"><svg viewBox="0 0 24 24"><path d="M6 4v12M6 16l-3-3M6 16l3-3M18 20V8M18 8l-3 3M18 8l3 3"/></svg>Rhythm Trainer</button>
       <button class="tool" data-open="s-drill"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 9v4l2 2M9 3h6"/></svg>Chord Drill</button>
@@ -937,6 +958,14 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
       <label class="row" style="flex-wrap:nowrap"><span class="small" style="min-width:64px">Drums</span><input type="range" id="jmVd" min="0" max="100" value="80"></label>
       <label class="row" style="flex-wrap:nowrap"><span class="small" style="min-width:64px">Bass</span><input type="range" id="jmVb" min="0" max="100" value="80"></label>
       <label class="row" style="flex-wrap:nowrap"><span class="small" style="min-width:64px">Chords</span><input type="range" id="jmVc" min="0" max="100" value="70"></label></div>
+  </div>
+</div></section>
+
+<section class="screen" id="s-theory" hidden><div class="wrap">
+  <header class="shead"><button class="circ" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="stitle"><div class="eyebrow">Learn</div><div class="big">Music Theory</div></div><span></span></header>
+  <div class="sbody">
+    <div class="seg" id="thTabs"><button type="button" data-t="notes" aria-pressed="true">12 notes</button><button type="button" data-t="circle" aria-pressed="false">Circle of 5ths</button><button type="button" data-t="scales" aria-pressed="false">Scales</button><button type="button" data-t="chords" aria-pressed="false">Chords</button></div>
+    <div class="thbody" id="thBody"></div>
   </div>
 </div></section>
 
@@ -1881,6 +1910,7 @@ const ART={
   dots:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g stroke="#6F8C93" opacity=".5">'+[0,1,2,3,4,5].map(i=>'<line x1="'+(70+i*22)+'" y1="0" x2="'+(70+i*22)+'" y2="140"/>').join("")+[0,1,2,3].map(j=>'<line x1="60" x2="200" y1="'+(20+j*34)+'" y2="'+(20+j*34)+'"/>').join("")+'</g><g fill="#1FE0CC"><circle cx="114" cy="37" r="9"/><circle cx="136" cy="71" r="9"/><circle cx="158" cy="71" r="9"/></g></svg>',
   tab:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g stroke="#6F8C93" opacity=".45">'+[0,1,2,3,4,5].map(i=>'<line x1="40" x2="200" y1="'+(25+i*18)+'" y2="'+(25+i*18)+'"/>').join("")+'</g><g fill="#1FE0CC" font-family="monospace" font-size="15" font-weight="700"><text x="80" y="66">3</text><text x="112" y="48">5</text><text x="140" y="84">2</text><text x="170" y="30">0</text></g></svg>',
   wave:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><path d="M40 70 Q60 20 80 70 T120 70 T160 70 T200 70" fill="none" stroke="#1FE0CC" stroke-width="3" opacity=".6"/><path d="M40 90 Q60 60 80 90 T120 90 T160 90 T200 90" fill="none" stroke="#3FE6D4" stroke-width="1.5" opacity=".35"/></svg>',
+  theory:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><g fill="none" stroke="#1FE0CC" opacity=".55"><circle cx="150" cy="70" r="52" stroke-width="2"/><circle cx="150" cy="70" r="30" stroke-width="1.4"/></g><g fill="#1FE0CC" font-family="Inter, sans-serif" font-size="13" font-weight="700" text-anchor="middle" opacity=".8"><text x="150" y="30">C</text><text x="190" y="74">A</text><text x="150" y="118">F♯</text><text x="110" y="74">E♭</text></g></svg>',
   neck:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><rect x="30" y="30" width="190" height="80" fill="#1C1214" opacity=".6"/><g stroke="#A9B4B9" opacity=".55">'+[0,1,2,3,4].map(i=>'<line x1="'+(50+i*38)+'" x2="'+(50+i*38)+'" y1="30" y2="110"/>').join("")+'</g><g fill="#1FE0CC"><circle cx="69" cy="50" r="7"/><circle cx="107" cy="70" r="7"/><circle cx="145" cy="90" r="7"/></g></svg>'};
 const CHECK='<svg viewBox="0 0 24 24" width="18" height="18" style="stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5 9-10"/></svg>';
 function renderModules(){const box=$("modules");box.innerHTML="";const nextLesson=nextLessonIdx();
@@ -1932,13 +1962,18 @@ LESSONS.push(
   {t:"Hammer-ons, pull-offs, slides",m:10,goal:"Connect notes smoothly without picking every one.",tips:["Hammer-on: pick a note, then slam another finger down on a higher fret to sound the next note.","Pull-off: with both fingers down, pick, then flick the higher finger off sideways to sound the lower note.","Slide: pick, then keep pressure on as you slide your finger to the new fret."],acts:[["Play Legato Licks",()=>openSong("legato")]]},
   {t:"Bends and vibrato",m:10,goal:"Make notes sing like a lead guitarist.",tips:["Bend: push the string toward the ceiling with your ring finger, with the 1st and 2nd fingers behind it helping.","Bend until it sounds like the note two frets higher. Check it by playing that note first.","Vibrato: small, even wiggles of a bend, coming from your wrist."],acts:[["Open the scale",()=>openScale(9,"Minor pentatonic",5)]]},
   {t:"Improvise over the blues",m:12,goal:"Make up your own lead lines.",tips:["Put on the 12-bar blues, then play notes from the E minor pentatonic scale over it.","Short phrases with space between them sound better than nonstop notes.","Land on E when the chord goes back to E7. It sounds like coming home."],acts:[["Jam: blues in E",()=>{S.jam={genre:"blues"};save();openScreen("s-jam");}],["E minor pentatonic",()=>openScale(4,"Minor pentatonic",0)]]},
-  {t:"Keys and their chords",m:8,goal:"See why certain chords sound good together.",tips:["A key is a family of chords. In G: G, Am, Bm, C, D and Em.","The I, IV, V and vi chords (G, C, D, Em in G) make up a huge share of popular music.","Fifties Doo-Wop is G, Em, C, D. That's I, vi, IV, V."],acts:[["Play Fifties Doo-Wop",()=>openAlong("fifties")]]},
+  {t:"Keys and their chords",m:8,goal:"See why certain chords sound good together.",tips:["A key is a family of chords. In G: G, Am, Bm, C, D and Em.","The I, IV, V and vi chords (G, C, D, Em in G) make up a huge share of popular music.","Fifties Doo-Wop is G, Em, C, D. That's I, vi, IV, V."],acts:[["Circle of fifths",()=>openTheory("circle")],["Play Fifties Doo-Wop",()=>openAlong("fifties")]]},
   {t:"Using a capo",m:6,goal:"Play songs in any key with the chords you know.",tips:["A capo clamps across all strings and acts like a new nut.","Capo 2 plus a G shape sounds like A. Same fingers, higher key.","When a tab says Capo 3, put the capo just behind fret 3 and play the shapes as written."]},
   {t:"Your practice routine",m:5,goal:"Practice in a way that makes you improve fast.",tips:["15 to 20 minutes a day beats two hours once a week.","Warm up with the spider for 2 minutes, do 2 minutes of chord changes, 5 of strumming, then spend the rest on a song you love.","Always start slow, and only speed up once it's clean. Slow and clean is how fast gets built."],acts:[["Rhythm Trainer",()=>openScreen("s-strum")],["Chord Drill",()=>openTrainer("G","C")]]});
+LESSONS.push(
+  {t:"The 12 notes",m:6,goal:"Learn the chromatic scale: every note in music.",tips:["There are only 12 notes: C, C♯, D, D♯, E, F, F♯, G, G♯, A, A♯, B. Then they repeat.","On guitar, each fret is one note higher, a half step. Twelve frets up, you're back to the same note, an octave higher.","B to C and E to F are only a half step apart. Every other pair of neighbors has a sharp or flat in between."],acts:[["Open the 12 notes",()=>openTheory("notes")]]},
+  {t:"The circle of fifths",m:8,goal:"See how all 12 keys fit together.",tips:["Start at C at the top: no sharps or flats. Each step clockwise goes up a fifth and adds one sharp: G has 1, D has 2, A has 3.","Counter-clockwise adds flats: F has 1, B♭ has 2, E♭ has 3.","A key's two neighbors are its IV and V chords. With the key itself, that's the three most important chords in most songs."],acts:[["Open the circle of fifths",()=>openTheory("circle")]]},
+  {t:"Scales: whole and half steps",m:6,goal:"Build a major and a minor scale from the 12 notes.",tips:["A half step is 1 fret. A whole step is 2 frets.","Major scale: W W H W W W H. Start on any note, follow the pattern, and you get that note's major scale.","Natural minor: W H W W H W W. Same notes as its relative major, starting somewhere else."],acts:[["Open scales",()=>openTheory("scales")]]},
+  {t:"How chords are built",m:6,goal:"Understand what makes a chord major, minor or a 7th.",tips:["Triads use the 1st, 3rd and 5th notes of a scale.","Major: 4 half steps then 3. Minor: 3 then 4. That one note makes the mood.","Add the 7th for a richer sound. A power chord is just the root and the 5th."],acts:[["Open chords",()=>openTheory("chords")]]});
 MODULES.length=0;MODULES.push(
-  {t:"Getting Started",l:[12,0,13],art:"strings"},{t:"First Chords",l:[1,2,3,16,17],art:"dots"},{t:"Strumming & Rhythm",l:[14,15,18,19],art:"wave"},
+  {t:"Music Theory",l:[36,37,38,39,33],art:"theory"},{t:"Getting Started",l:[12,0,13],art:"strings"},{t:"First Chords",l:[1,2,3,16,17],art:"dots"},{t:"Strumming & Rhythm",l:[14,15,18,19],art:"wave"},
   {t:"Core Chords",l:[4,5,7],art:"dots"},{t:"Tabs & Songs",l:[6,20,21,11],art:"tab"},{t:"Rock Guitar",l:[22,23,24],art:"wave"},
-  {t:"Barre Chords",l:[25,26,27],art:"dots"},{t:"Fingerpicking",l:[28,29],art:"strings"},{t:"Lead Guitar",l:[8,9,30,31,10,32],art:"neck"},{t:"Music Basics",l:[33,34,35],art:"tab"});
+  {t:"Barre Chords",l:[25,26,27],art:"dots"},{t:"Fingerpicking",l:[28,29],art:"strings"},{t:"Lead Guitar",l:[8,9,30,31,10,32],art:"neck"},{t:"Capo & Practice",l:[34,35],art:"tab"});
 const ORDER=()=>MODULES.flatMap(M=>M.l);
 function nextLessonIdx(){const o=ORDER().find(i=>!S.done[i]);return o==null?-1:o;}
 /* built-in practice tabs */
@@ -3582,6 +3617,85 @@ function jamGenre(id){JM.g=GENRES.find(g=>g.id===id)||GENRES[0];const j=jamSet()
   [["jmVd","vd"],["jmVb","vb"],["jmVc","vc"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{jamSet()[k]=+e.target.value/100;jamVol();}));["jmVd","jmVb","jmVc"].forEach(id=>$(id).addEventListener("change",()=>save()));
   $("jmGo").addEventListener("click",()=>JM.on?jamStop():jamStart());onClose["s-jam"]=()=>jamStop();onOpen["s-jam"]=()=>{JM.g=GENRES.find(g=>g.id===(S.jam&&S.jam.genre))||JM.g;jamUI();};}
 $("leftyChip").addEventListener("click",()=>{S.lefty=!S.lefty;save();leftyApply();toast(S.lefty?"Left-handed: the highway, neck and chord charts are mirrored":"Right-handed layout",2400);});leftyApply();
+/* ---------- Music Theory: the 12 notes, the circle of fifths, scales and chords, all tappable ---------- */
+const FLATN=["C","D♭","D","E♭","E","F","G♭","G","A♭","A","B♭","B"];
+const TH={tab:"notes",key:0,flats:false,minor:false,sel:-1,chord:"maj",scale:"major"};
+const thName=pc=>(TH.flats?FLATN:NOTES)[((pc%12)+12)%12].replace("#","♯");
+/* spell notes the way the key does: flat keys use flats (F, B♭, E♭, A♭, D♭), lowered 3rds and 7ths use flats too */
+const FLATKEYS=new Set([5,10,3,8,1]);const keyNm=(k,pc)=>((FLATKEYS.has(k)?FLATN:NOTES)[((pc%12)+12)%12]).replace("#","♯");
+const ivNm=(k,iv)=>(iv===3||iv===10)&&!FLATKEYS.has(k)&&![4,11,6,1].includes(k)?FLATN[(k+iv)%12]:keyNm(k,k+iv);
+const thPlay=(ms,gap)=>{const c=ac();ms.forEach((m,i)=>pluck(m,c.currentTime+.03+i*(gap||0),.32,1.4));};
+function thPiano(hl,label){const W=[0,2,4,5,7,9,11],B=[1,3,6,8,10];const kw=100/7;let s='<svg viewBox="0 0 700 220" class="piano" aria-label="Piano keyboard">';
+  W.forEach((pc,i)=>{const on=hl.has(pc);s+='<g class="pk w'+(on?" on":"")+'" data-pc="'+pc+'"><rect x="'+(i*100+2)+'" y="2" width="96" height="214" rx="10"/><text x="'+(i*100+50)+'" y="196" text-anchor="middle">'+(label?label(pc):thName(pc))+'</text></g>';});
+  const bx={1:68,3:168,6:368,8:468,10:568};B.forEach(pc=>{const on=hl.has(pc);s+='<g class="pk b'+(on?" on":"")+'" data-pc="'+pc+'"><rect x="'+bx[pc]+'" y="2" width="64" height="132" rx="8"/><text x="'+(bx[pc]+32)+'" y="116" text-anchor="middle">'+(label?label(pc):thName(pc))+'</text></g>';});
+  return s+'</svg>';}
+function thString(hl,label){let s='<svg viewBox="0 0 700 92" class="gstr" aria-label="Low E string, frets 0 to 12">';const X=f=>18+f*55;
+  s+='<rect x="18" y="30" width="664" height="34" rx="6" class="wood"/><line x1="18" y1="47" x2="682" y2="47" class="str"/>';for(let f=1;f<=12;f++)s+='<line x1="'+(X(f)-27)+'" y1="30" x2="'+(X(f)-27)+'" y2="64" class="fret"/>';
+  for(let f=0;f<=12;f++){const pc=(4+f)%12;const on=hl.has(pc);s+='<g class="gn'+(on?" on":"")+'" data-f="'+f+'"><circle cx="'+X(f)+'" cy="47" r="15"/><text x="'+X(f)+'" y="52" text-anchor="middle">'+(label?label(pc):thName(pc))+'</text><text x="'+X(f)+'" y="86" text-anchor="middle" class="fn">'+f+'</text></g>';}
+  return s+'</svg>';}
+/* circle of fifths */
+const COF=[0,7,2,9,4,11,6,1,8,3,10,5];
+const ACC=["","1♯","2♯","3♯","4♯","5♯","6♯ / 6♭","5♭","4♭","3♭","2♭","1♭"];
+function cofSVG(){const R1=150,R2=104,R3=64,cx=160,cy=160;const sel=TH.key;const si=COF.indexOf(sel);const fam=new Set([si,(si+1)%12,(si+11)%12]);let s='<svg viewBox="0 0 320 320" class="cof" aria-label="Circle of fifths">';
+  const arc=(r0,r1,a0,a1)=>{const p=(r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];const [x0,y0]=p(r1,a0),[x1,y1]=p(r1,a1),[x2,y2]=p(r0,a1),[x3,y3]=p(r0,a0);return "M"+x0+" "+y0+" A"+r1+" "+r1+" 0 0 1 "+x1+" "+y1+" L"+x2+" "+y2+" A"+r0+" "+r0+" 0 0 0 "+x3+" "+y3+"Z";};
+  COF.forEach((pc,i)=>{const a0=(i-.5)*Math.PI/6,a1=(i+.5)*Math.PI/6,am=i*Math.PI/6;const cls=(i===si?" sel":fam.has(i)?" fam":"");
+    const lab=["C","G","D","A","E","B","F♯","D♭","A♭","E♭","B♭","F"][i];const mlab=["Am","Em","Bm","F♯m","C♯m","G♯m","D♯m","B♭m","Fm","Cm","Gm","Dm"][i];
+    s+='<g class="cs'+cls+'" data-i="'+i+'"><path d="'+arc(R2,R1,a0,a1)+'" class="outer"/><path d="'+arc(R3,R2,a0,a1)+'" class="inner"/>'+
+      '<text x="'+(cx+(R1+R2)/2*Math.sin(am))+'" y="'+(cy-(R1+R2)/2*Math.cos(am)+7)+'" text-anchor="middle" class="maj">'+lab+'</text>'+
+      '<text x="'+(cx+(R2+R3)/2*Math.sin(am))+'" y="'+(cy-(R2+R3)/2*Math.cos(am)+5)+'" text-anchor="middle" class="min">'+mlab+'</text></g>';});
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R3-4)+'" class="hub"/><text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" class="hk">'+keyNm(sel,sel)+'</text><text x="'+cx+'" y="'+(cy+18)+'" text-anchor="middle" class="ha">'+(ACC[si]||"no ♯ or ♭")+'</text>';
+  return s+'</svg>';}
+const MAJ=[0,2,4,5,7,9,11],NMIN=[0,2,3,5,7,8,10];const QUAL=["","m","m","","","m","dim"],ROMN=["I","ii","iii","IV","V","vi","vii°"];
+function keyChords(k){return MAJ.map((iv,i)=>({name:keyNm(k,k+iv)+QUAL[i],play:NOTES[(k+iv)%12]+QUAL[i],rn:ROMN[i]}));}
+function thRender(){document.querySelectorAll("#thTabs button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===TH.tab?"true":"false"));const box=$("thBody");const k=TH.key;let h="";
+  if(TH.tab==="notes"){const hl=TH.sel>=0?new Set([TH.sel]):new Set();
+    h='<p>Music uses just <b>12 notes</b>. After the 12th, they repeat higher up. Playing all 12 in a row is the <b>chromatic scale</b>.</p>'+
+      '<div class="thcard">'+thPiano(hl)+'</div><div class="thcard"><div class="thscroll">'+thString(hl)+'</div><div class="small muted">The low E string, frets 0 to 12. Fret 12 is E again, one octave higher.</div></div>'+
+      '<div class="row"><button class="btn" id="thChrom">Play the chromatic scale</button><button class="chip" id="thFlat" aria-pressed="'+TH.flats+'">'+(TH.flats?"Showing flats (♭)":"Showing sharps (♯)")+'</button></div>'+
+      '<ul class="thlist"><li>From one fret to the next is a <b>half step</b>. Two frets is a <b>whole step</b>.</li><li>Sharp (♯) means one half step up, flat (♭) one half step down. C♯ and D♭ are the same note with two names.</li><li>B to C and E to F have no note between them. That\'s why the piano has no black key there.</li><li>Tap any key or fret to hear it.</li></ul>';}
+  else if(TH.tab==="circle"){const ch=keyChords(k);const si=COF.indexOf(k);
+    h='<p>The <b>circle of fifths</b> puts all 12 keys in order. Each step clockwise is five notes up and adds one sharp. Counter-clockwise adds a flat.</p>'+
+      '<div class="thcard cofwrap">'+cofSVG()+'</div>'+
+      '<div class="thkey"><b>Key of '+keyNm(k,k)+' major</b><span>'+(ACC[si]?ACC[si]+" in the key signature":"No sharps or flats")+' · relative minor: '+keyNm(k,k+9)+'m</span></div>'+
+      '<div class="small muted">Chords in this key (tap to hear):</div><div class="thchords">'+ch.map((c,i)=>'<button class="thc'+([0,3,4].includes(i)?" big":"")+'" data-c="'+esc(c.play)+'"><em>'+c.rn+'</em>'+esc(c.name)+'</button>').join("")+'</div>'+
+      '<div class="row"><button class="btn" id="thI4V">Play I – IV – V – I</button><button class="btn ghost" id="thJam">Jam in '+keyNm(k,k)+'</button></div>'+
+      '<ul class="thlist"><li>The keys next to each other share the most chords. The highlighted neighbors of your key are its IV and V chords.</li><li>The inside ring shows each key\'s relative minor: same notes, different home note.</li><li>Tap any key on the circle to explore it.</li></ul>';}
+  else if(TH.tab==="scales"){const iv=TH.scale==="major"?MAJ:NMIN;const hl=new Set(iv.map(x=>(k+x)%12));const steps=iv.slice(1).concat(12).map((x,i)=>x-iv[i]===2?"W":"H");
+    h='<p>A <b>scale</b> picks 7 of the 12 notes using a pattern of whole (W) and half (H) steps.</p>'+
+      '<div class="seg" id="thScaleSeg"><button type="button" data-s="major" aria-pressed="'+(TH.scale==="major")+'">Major</button><button type="button" data-s="minor" aria-pressed="'+(TH.scale==="minor")+'">Natural minor</button></div>'+
+      '<div class="thsteps">'+steps.map(st=>'<span class="'+st+'">'+st+'</span>').join("")+'</div>'+
+      '<div class="thcard">'+thPiano(hl,pc=>keyNm(k,pc))+'</div><div class="thcard thscroll">'+thString(hl,pc=>keyNm(k,pc))+'</div>'+
+      '<div class="small muted">'+keyNm(k,k)+' '+(TH.scale==="major"?"major":"minor")+': '+iv.map(x=>TH.scale==="major"?keyNm(k,k+x):ivNm(k,x===8?8:x)).join("  ")+'</div>'+
+      '<div class="row"><button class="btn" id="thScalePlay">Play it</button><button class="btn ghost" id="thScaleOpen">See it on the whole neck</button></div>'+
+      '<ul class="thlist"><li>Major sounds bright and happy: W W H W W W H.</li><li>Minor sounds darker: W H W W H W W.</li><li>Change the key on the circle of fifths tab, and the scale moves with it.</li></ul>';}
+  else{const Q={maj:[0,4,7],min:[0,3,7],"7":[0,4,7,10],maj7:[0,4,7,11],m7:[0,3,7,10],"5":[0,7]};const NM={maj:"",min:"m","7":"7",maj7:"maj7",m7:"m7","5":"5"};const iv=Q[TH.chord];const hl=new Set(iv.map(x=>(k+x)%12));
+    const IVL={0:"R",3:"♭3",4:"3",7:"5",10:"♭7",11:"7"};const lbl=pc=>IVL[((pc-k)%12+12)%12]||thName(pc);
+    h='<p>A <b>chord</b> is three or more notes played together. Most are built by stacking every other note of the scale: the <b>root</b>, the <b>3rd</b> and the <b>5th</b>.</p>'+
+      '<div class="chiprow" id="thChordSeg">'+[["maj","Major"],["min","Minor"],["7","Dominant 7"],["maj7","Major 7"],["m7","Minor 7"],["5","Power chord"]].map(([q,n])=>'<button class="chip" data-q="'+q+'" aria-pressed="'+(TH.chord===q)+'">'+n+'</button>').join("")+'</div>'+
+      '<div class="thcard">'+thPiano(hl,pc=>hl.has(pc)?lbl(pc):thName(pc))+'</div>'+
+      '<div class="thkey"><b>'+keyNm(k,k)+NM[TH.chord]+'</b><span>'+iv.map(x=>ivNm(k,x)).join(" – ")+'</span></div>'+
+      '<div class="row"><button class="btn" id="thChordPlay">Hear it</button><button class="btn ghost" id="thChordOpen">How to play it</button></div>'+
+      '<ul class="thlist"><li>Major: root + 4 half steps + 3 half steps. Bright.</li><li>Minor: root + 3 + 4. The lowered (♭) 3rd makes it sad.</li><li>Power chords skip the 3rd, so they\'re neither major nor minor. That\'s why they sound so good with distortion.</li></ul>';}
+  box.innerHTML=h;thWire();}
+function thWire(){const k=TH.key;const box=$("thBody");
+  box.querySelectorAll(".pk").forEach(g=>g.addEventListener("click",()=>{const pc=+g.dataset.pc;TH.sel=pc;thPlay([60+pc]);if(TH.tab==="notes")thRender();}));
+  box.querySelectorAll(".gn").forEach(g=>g.addEventListener("click",()=>{const f=+g.dataset.f;TH.sel=(4+f)%12;thPlay([40+f]);if(TH.tab==="notes")thRender();}));
+  const on=(id,fn)=>{const e=$(id);if(e)e.addEventListener("click",fn);};
+  on("thChrom",()=>{const c=ac();for(let i=0;i<=12;i++){pluck(52+i,c.currentTime+.05+i*.28,.3,.9);setTimeout(()=>{TH.sel=(4+i)%12;if(TH.tab==="notes")thRender();},50+i*280);}});
+  on("thFlat",()=>{TH.flats=!TH.flats;thRender();});
+  box.querySelectorAll(".cs").forEach(g=>g.addEventListener("click",()=>{TH.key=COF[+g.dataset.i];const c=ac();strumV(voicingOf(NOTES[TH.key]),c.currentTime+.02,.26,1.6);thRender();}));
+  box.querySelectorAll(".thc").forEach(b=>b.addEventListener("click",()=>{const v=voicingOf(b.dataset.c);if(v)strumV(v,ac().currentTime+.02,.28,1.8);}));
+  on("thI4V",()=>{const ch=keyChords(k);const c=ac();[0,3,4,0].forEach((i,n)=>{const v=voicingOf(ch[i].play);if(v)strumV(v,c.currentTime+.05+n*1.1,.26,1.2);});});
+  on("thJam",()=>{S.jam=Object.assign(S.jam||{},{key:k,prog:"i4v"});save();openScreen("s-jam");});
+  box.querySelectorAll("#thScaleSeg button").forEach(b=>b.addEventListener("click",()=>{TH.scale=b.dataset.s;thRender();}));
+  on("thScalePlay",()=>{const iv=TH.scale==="major"?MAJ:NMIN;const base=48+k;const c=ac();iv.concat(12).forEach((x,i)=>pluck(base+x,c.currentTime+.05+i*.32,.3,.9));});
+  on("thScaleOpen",()=>openScale(k,TH.scale==="major"?"Major (Ionian)":"Natural minor (Aeolian)",-1));
+  box.querySelectorAll("#thChordSeg .chip").forEach(b=>b.addEventListener("click",()=>{TH.chord=b.dataset.q;thRender();}));
+  const cname=()=>NOTES[k]+({maj:"",min:"m","7":"7",maj7:"maj7",m7:"m7","5":"5"})[TH.chord];
+  on("thChordPlay",()=>{const v=voicingOf(cname());if(v)strumV(v,ac().currentTime+.02,.28,2);});on("thChordOpen",()=>openChord(cname()));}
+function openTheory(tab){TH.tab=tab||TH.tab;TH.sel=-1;openScreen("s-theory");thRender();}
+document.querySelectorAll("#thTabs button").forEach(b=>b.addEventListener("click",()=>{TH.tab=b.dataset.t;TH.sel=-1;thRender();}));
+onOpen["s-theory"]=()=>thRender();
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
@@ -3676,7 +3790,7 @@ const TOUR_STEPS=[
   {t:"Welcome to Fretwork",b:"A quick tour of everything in the app. It takes about 3 minutes, and you can leave any time with Skip. You can take it again from your Profile.",hero:true},
   {p:"today",s:".pg[data-p='today'] .dots",t:"Your pages",b:"Fretwork has six pages. Swipe left or right to move between them, tap a dot to jump to one, or tap Next section at the bottom."},
   {p:"today",s:"#todayBox .ring",t:"Today",b:"Your progress through the lessons. Do a little each day to build a streak."},
-  {p:"today",s:"#todayGo",t:"Continue your lesson",b:"Tap this to pick up where you left off. All lessons opens the full course: 36 lessons from your first chord to soloing."},
+  {p:"today",s:"#todayGo",t:"Continue your lesson",b:"Tap this to pick up where you left off. All lessons opens the full course: 40 lessons, starting with music theory (the 12 notes and the circle of fifths) and going all the way to soloing."},
   {p:"today",s:"#planBox",t:"Today's practice",b:"A short plan made for you each day: a warm-up, chord changes, rhythm, your next lesson and a song. Tap one to start it. Tick them off as you go."},
   {p:"find",s:"#npCard",t:"Listening now",b:"When a song plays on your phone, in Spotify or any music app, it shows up here. Tap it to find its tab in one step."},
   {p:"find",s:"#gpSearchBtn",up:"#gpArtist",t:"Search for a tab",b:"Type an artist and a song, then tap Search. Fretwork checks 3 free Guitar Pro sites at once and puts the best match on top."},
@@ -3697,7 +3811,7 @@ const TOUR_STEPS=[
   {p:"tune",s:".tzmeterwrap",t:"Tuner",b:"Tap the light to start listening, then pluck a string. The needle shows how far off you are. Green in the middle means in tune."},
   {p:"tune",s:"#tzBoard",t:"Hear each string",b:"Tap a string to hear the note it should be. It turns green when you match it."},
   {p:"tune",s:".tzpanel",t:"Other tunings",b:"Tap SELECT for tunings like Drop D or half step down. Fretwork warns you if a song needs a different one."},
-  {p:"tools",s:".pg[data-p='tools'] .gin",t:"Tools",b:"Jam Mode gives you a backing band in any style: blues, rock, metal, funk, reggae and more, with your choice of key, tempo, drums and sounds. Plus the Rhythm Trainer, Chord Drill, Ear Trainer, scales and the Song Builder."},
+  {p:"tools",s:".pg[data-p='tools'] .gin",t:"Tools",b:"Music Theory shows the 12 notes, the circle of fifths, scales and chords, and you can tap everything to hear it. Jam Mode gives you a backing band in any style: blues, rock, metal, funk, reggae and more, with your choice of key, tempo, drums and sounds. Plus the Rhythm Trainer, Chord Drill, Ear Trainer, scales and the Song Builder."},
   {p:"me",s:"#progBox",t:"Your progress",b:"Your last four weeks of practice, and how your score on each song is climbing."},
   {p:"me",s:"#lvlRow",t:"Your level",b:"Set how much you can play, and Fretwork suggests songs that fit."},
   {p:"me",s:"#leftyCard",t:"Left-handed?",b:"Turn this on and the highway, neck, chord charts and fretboards all mirror to match a left-handed guitar."},
