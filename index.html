@@ -781,6 +781,8 @@ body.in-screen .dhead{visibility:hidden}
 #s-profile::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(60% 40% at 15% 8%,rgba(255,55,95,.18),transparent 70%),radial-gradient(55% 40% at 95% 45%,rgba(191,90,242,.16),transparent 70%),url(paper.jpg) center/cover no-repeat,#000}
 #s-profile{background:#000!important}
 #s-profile .card{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02) 55%)!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:24px!important}
+.nphero.idle .npart{opacity:.8}.nphero.idle .btn svg{vertical-align:-2px;margin-right:4px}.spbar.idle{background:linear-gradient(150deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border-color:rgba(30,215,96,.25)}
+.spbar.idle #spBack,.spbar.idle #spRew,.spbar.idle #spFwd,.spbar.idle #spFollow{opacity:.35;pointer-events:none}
 </style>
 </head>
 <body>
@@ -4160,21 +4162,23 @@ const SPB={timer:0,auto:{}};
 function spBarStart(){clearInterval(SPB.timer);SPB.timer=setInterval(spBarTick,1000);spBarTick();}
 function spBarStop(){clearInterval(SPB.timer);SPB.timer=0;}
 async function spBarTick(){if($("s-song").hidden){spBarStop();return;}const bar=$("spBar");if(!recAvailable()||REC.audio){bar.hidden=true;return;}
-  let ok=false;try{ok=await recPoll();}catch(e){}if(!ok||!REC.title){bar.hidden=true;return;}bar.hidden=false;
+  let ok=false;try{ok=await recPoll();}catch(e){}
+  if(!ok||!REC.title){if(S.npLast&&window.FretworkNative){bar.hidden=false;bar.classList.add("idle");$("spT").textContent=S.npLast.title;$("spA").textContent=(S.npLast.artist||"")+" · paused in Spotify";
+      $("spPP").innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>';$("spPP").setAttribute("aria-label","Resume Spotify");return;}bar.hidden=true;return;}bar.hidden=false;bar.classList.remove("idle");
   $("spT").textContent=REC.title;const mm=x=>Math.floor(x/60)+":"+String(Math.floor(x%60)).padStart(2,"0");$("spA").textContent=(REC.artist||"")+" · "+mm(Math.max(0,recPos()))+(REC.dur?" / "+mm(REC.dur):"");
   $("spPP").innerHTML=REC.playing?'<svg viewBox="0 0 24 24"><path d="M7 5h3v14H7zM14 5h3v14h-3z"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>';$("spPP").setAttribute("aria-label",REC.playing?"Pause Spotify":"Play Spotify");
   const art=NP.cur&&songKey(NP.cur.title,NP.cur.artist)===REC.key&&NP.cur.img?NP.cur.img:(ALB.img&&recMatchesTab()?ALB.img.src:"");const im=$("spArt");if(art){if(im.dataset.src!==art){im.innerHTML='<img alt="" src="'+esc(art)+'">';im.dataset.src=art;}}else if(im.dataset.src!==""){im.innerHTML='<svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>';im.dataset.src="";}
   /* auto link: when Spotify is playing the song you have open, the tab follows it by itself */
   const k=TP.tab&&TP.tab.id;if(!REC.on&&REC.playing&&!TP.playing&&recMatchesTab()&&S.autoFollow!==false&&!SPB.auto[k]){SPB.auto[k]=1;await recToggle();toast("Following Spotify",1800);}
   $("spFollow").setAttribute("aria-pressed",REC.on?"true":"false");$("spFollow").textContent=REC.on?"Following":"Follow";}
-$("spPP").addEventListener("click",async()=>{await recPoll();recCmd(REC.playing?"pause":"play");setTimeout(spBarTick,400);});
+$("spPP").addEventListener("click",async()=>{const ok=await recPoll().catch(()=>false);if(!ok||!REC.title){await spResume();setTimeout(spBarTick,600);return;}recCmd(REC.playing?"pause":"play");setTimeout(spBarTick,400);});
 $("spBack").addEventListener("click",()=>{recCmd("seek",0);toast("Back to the start",1000);setTimeout(spBarTick,400);});
 $("spRew").addEventListener("click",()=>{recCmd("seek",Math.max(0,(recPos()-10)*1000));setTimeout(spBarTick,400);});
 $("spFwd").addEventListener("click",()=>{recCmd("seek",(recPos()+10)*1000);setTimeout(spBarTick,400);});
 $("spArt").addEventListener("click",()=>openSpotify());
 $("spFollow").addEventListener("click",()=>{const k=TP.tab&&TP.tab.id;if(k)SPB.auto[k]=1;recToggle();setTimeout(spBarTick,300);});
 /* one-tap connect on Android: ask once, and confirm when access is switched on */
-function spConnectPrompt(){const n=window.FretworkNative;if(!n||!n.nowPlaying||S.npAsked)return;let r="";try{r=n.nowPlaying();}catch(e){}if(r!=="perm")return;
+function spConnectPrompt(){const n=window.FretworkNative;if(!n||!n.nowPlaying)return;let r="";try{r=n.nowPlaying();}catch(e){}if(r!=="perm"){if(!S.npHad){S.npHad=1;save();}return;}if(S.npAsked&&!S.npHad)return;delete S.npHad;
   S.npAsked=1;save();const sh=$("spConnect2");sh.hidden=false;$("sheetBg").hidden=false;openSheetId="spConnect2";}
 $("spAllow").addEventListener("click",()=>{closeSheet();S.npWaiting=1;try{window.FretworkNative.openNowPlayingSettings();}catch(e){}});
 document.addEventListener("visibilitychange",()=>{if(document.hidden||!S.npWaiting)return;const n=window.FretworkNative;let r="";try{r=n&&n.nowPlaying?n.nowPlaying():"perm";}catch(e){}
@@ -4387,7 +4391,19 @@ function npPhone(){const n=window.FretworkNative;if(!n||!n.nowPlaying)return fal
   if(r==="perm"){$("npSrc").textContent="";$("npBody").innerHTML='<div class="small">Let Fretwork see what\'s playing on your phone. It reads the song name from Spotify or any music app. No Spotify login or Premium needed.</div><div class="tiny muted">On Android 13 and newer: if the switch is greyed out, open Settings › Apps › Fretwork › ⋮ › Allow restricted settings first.</div>';
     const b=document.createElement("button");b.className="btn small";b.textContent="Allow access";b.addEventListener("click",()=>{try{n.openNowPlayingSettings();}catch(e){}});$("npBody").appendChild(b);return true;}
   let t=null;try{t=r?JSON.parse(r):null;}catch(e){}if(t){t.dur=(t.dur||0)/1000;}const app=t&&t.app?(/spotify/i.test(t.app)?"Spotify":/youtube/i.test(t.app)?"YouTube Music":"your music app"):"";
+  if(t&&t.title){const L=S.npLast;if(!L||L.title!==t.title||L.artist!==t.artist){S.npLast={title:t.title,artist:t.artist,album:t.album||"",dur:t.dur||0,app:t.app||"",at:Date.now()};save();}}
+  if(!t&&S.npLast){npShowLast();return true;}
   npShow(t,t?"From "+app:"");return true;}
+/* Spotify went quiet: keep the last song on screen, with a button to start it again without leaving Fretwork */
+function npShowLast(){const L=S.npLast;const body=$("npBody");$("npSrc").textContent="Last played";const kk=document.querySelector('.pg[data-p="find"] .kick');if(kk)kk.textContent="Last played · paused";const key="last|"+L.title;if(NP.key===key&&body.firstChild)return;NP.key=key;NP.cur=Object.assign({},L,{playing:false});
+  body.innerHTML='<div class="nphero idle"><div class="npart"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div><div class="npt">'+esc(L.title)+'</div><div class="nps">'+esc([L.artist,L.album].filter(Boolean).join(" · "))+' · paused</div>'+
+    '<div class="row nprow"><button class="btn w" id="npResume"><svg width="14" height="16" viewBox="0 0 14 16"><path d="M0 0l14 8-14 8z" fill="#000"/></svg> Resume in Spotify</button><button class="btn g" id="npOpenSp">Open Spotify</button></div><button class="btn g" id="npLearnLast">Learn this song</button></div>';
+  npArt(L,body.querySelector(".npart"));body.querySelector(".npart").addEventListener("click",()=>openSpotify());
+  $("npResume").addEventListener("click",()=>spResume());$("npOpenSp").addEventListener("click",()=>openSpotify());$("npLearnLast").addEventListener("click",()=>npFind(L.title,L.artist,L.dur));}
+/* wake Spotify back up: a play key reaches the last music app, even after it has gone quiet */
+async function spResume(){const n=window.FretworkNative;let ok=false;try{if(n&&n.mediaKey)ok=n.mediaKey("play");}catch(e){}
+  if(!ok){try{if(n&&n.transport&&REC.title){n.transport("play",0);ok=true;}}catch(e){}}
+  if(!ok){openSpotify();return;}toast("Resuming Spotify…",1500);for(let i=0;i<6;i++){await sleep(700);NP.key="";npPoll(true);try{if(await recPoll()&&REC.playing)break;}catch(e){}}}
 /* ---- Spotify login (website / iPhone) ---- */
 async function spLogin(){const id=$("spClient").value.trim();if(!/^[0-9a-z]{32}$/i.test(id)){toast("Paste the Client ID from your Spotify app. It's 32 letters and numbers.",5000);return;}S.spClient=id;save();
   if(!window.crypto||!crypto.subtle){toast("Open Fretwork from its https link to connect Spotify.");return;}
@@ -4414,7 +4430,7 @@ function spUI(){$("spRow").hidden=!!window.FretworkNative;const on=!!(S.sp&&S.sp
 async function npPoll(force){if(curView!=="songs"||stack.length)return;if($("deck")&&PAGES[DECK.i].id!=="find"&&!force)return;if(npPhone())return;if(S.sp&&S.sp.refresh){await npSpotify(force);return;}
   $("npSrc").textContent="";$("npBody").innerHTML='<div class="small muted">Connect Spotify to see what you\'re playing and find its tab in one tap.</div>';$("npRecent").innerHTML="";}
 $("spConnect").addEventListener("click",()=>{if(S.sp&&S.sp.refresh){S.sp=null;save();spUI();npPoll(true);toast("Spotify disconnected",2000);return;}spLogin();});
-setInterval(()=>npPoll(false),12000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")npPoll(false);});
+setInterval(()=>npPoll(false),6000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")npPoll(false);});
 spUI();spCallback();
 window.npPollSoon=()=>npPoll(true);
 })();
