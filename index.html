@@ -2506,7 +2506,7 @@ function ytBar(){let b=$("ytBar");if(!b){b=document.createElement("div");b.id="y
 function ytBarHide(){clearInterval(YT.poll);YT.poll=0;document.body.classList.remove("ytrec");const b=$("ytBar");if(b)b.hidden=true;}
 function ytTick(){const b=$("ytBar");if(!b||!YT.on)return;let st={};try{st=JSON.parse(NATIVE.recStatus()||"{}");}catch(e){}const s=YT.s||{};
   if(st.state==="rec"||st.state==="save")YT.seen=true;
-  const tot=s.dur?" / "+fmtDur(s.dur):"";const txt=st.state==="save"?"Saving the song…":st.state==="rec"?(st.note==="song"?"Recording the song · ":st.note==="sound"?"Hearing sound · ":"Waiting for the video to play · ")+fmtDur((st.ms||0)/1000)+tot:YT.seen?"Finishing…":"Tap Share screen (or Start now) to begin";
+  const tot=s.dur?" / "+fmtDur(s.dur):"";const txt=st.state==="save"?"Saving the song…":st.state==="rec"?(st.note==="muted"?"No sound: the video is muted. Tap Show video, then its speaker icon · ":st.note==="song"?"Recording the song · ":st.note==="sound"?"Hearing sound · ":"Waiting for the video to play · ")+fmtDur((st.ms||0)/1000)+tot:YT.seen?"Finishing…":"Tap Share screen (or Start now) to begin";
   b.querySelector(".yts").textContent=txt;b.querySelector(".ytlvl i").style.width=Math.min(100,Math.round(Math.sqrt(st.level||0)*260))+"%";
   $("ytStop").hidden=st.state!=="rec";$("ytOpen").hidden=st.state!=="rec"||document.visibilityState!=="visible";
   if(YT.seen&&st.state==="idle"&&!YT.handling)setTimeout(()=>window.fretworkRecDone(),300);}
