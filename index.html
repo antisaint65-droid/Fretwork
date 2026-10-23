@@ -817,6 +817,9 @@ body.in-screen .dhead{visibility:hidden}
 .ytlvl{height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}.ytlvl i{display:block;height:100%;width:0;background:#FF9F0A;transition:width .2s}
 .ytbtns{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}.ytbtns .btn{flex:1}
 #labCard.flash{box-shadow:0 0 0 2px #FF9F0A}
+.crashbox{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.6);display:grid;place-items:end center;padding:0 12px calc(16px + env(safe-area-inset-bottom,0px))}
+.crashin{width:min(100%,520px);display:grid;gap:10px;padding:18px;border-radius:22px;background:#1c1c1e;border:1px solid rgba(255,255,255,.12)}
+.crashin textarea{height:160px;font-size:11.5px}
 #fwSongs:empty,#gpResults:empty,#impMsg:empty{display:none}
 body.ytrec .toast{bottom:calc(170px + env(safe-area-inset-bottom,0px));z-index:95}#labCard{transition:box-shadow .4s}
 </style>
@@ -2511,7 +2514,7 @@ window.fretworkRecDone=async()=>{if(!NATIVE||YT.handling)return;let r=null;try{r
   const P=S.ytPending;const s=YT.s||(P&&P.s)||null;if(!r){let st={};try{st=JSON.parse(NATIVE.recStatus()||"{}");}catch(e){}if(st.state==="idle"&&YT.seen){YT.on=false;ytBarHide();}return;}
   YT.handling=true;YT.on=false;ytBarHide();
   try{try{NATIVE.recClear();}catch(e){}S.ytPending=null;save();
-    if(!r.ok){const m={denied:"Android needs your OK to record. Tap Full tab again and choose Start now.",mic:"Android counts recording the phone's own sound as using the mic, so Fretwork needs that permission. Tap Full tab again and allow it.",silent:"Fretwork couldn't hear YouTube. If the video opened in the YouTube app instead of the panel, try again. Or use Other ways to add a tab."}[r.err]||r.err||"The recording didn't work.";toast(m,7000);return;}
+    if(!r.ok){let tr="";try{tr=NATIVE.recTrace?NATIVE.recTrace():"";}catch(e){}labReport("recording","error: "+r.err+"\n"+navigator.userAgent+"\n"+tr);const m={denied:"Android needs your OK to record. Tap Full tab again and choose Start now.",mic:"Android counts recording the phone's own sound as using the mic, so Fretwork needs that permission. Tap Full tab again and allow it.",silent:"Fretwork couldn't hear YouTube. If the video opened in the YouTube app instead of the panel, try again. Or use Other ways to add a tab."}[r.err]||r.err||"The recording didn't work.";toast(m,7000);return;}
     const res=await fetch("/__rec/latest.m4a?t="+(r.at||Date.now()),{cache:"no-store"});if(!res.ok)throw new Error("the recording wasn't saved");const blob=await res.blob();if(blob.size<20000)throw new Error("the recording came out empty");
     LAB.blob=new Blob([blob],{type:"audio/mp4"});LAB.ext="m4a";LAB.name="YouTube recording · "+fmtDur((r.ms||0)/1000);LAB.img=s&&(s.img||s.thumb)||"";
     if(s){$("labTitle").value=npClean(s.title)||s.title;$("labArtist").value=npMainArtist(s.artist||"");}
@@ -2519,6 +2522,13 @@ window.fretworkRecDone=async()=>{if(!NATIVE||YT.handling)return;let r=null;try{r
     await labSend();}
   catch(e){toast("Couldn't send the recording: "+(e.message||e),5000);}
   finally{YT.handling=false;}};
+/* crash and recording reports go to the private lab repo, so they can be read and fixed */
+async function labReport(kind,text){if(!text)return false;try{if(labOwn()){const ts=new Date().toISOString().replace(/[:.]/g,"-");await gh("/contents/reports/"+ts+"-"+kind+".txt",{method:"PUT",body:{message:kind+" report",content:b64txt(text)}});return true;}}catch(e){}return false;}
+function crashSheet(text,sent){let d=$("crashBox");if(!d){d=document.createElement("div");d.id="crashBox";d.className="crashbox";document.body.appendChild(d);}
+  d.innerHTML='<div class="crashin"><b>Fretwork closed unexpectedly</b><div class="small muted">'+(sent?"The report went to your lab, so it can be fixed. You don't need to do anything.":"Copy this report and send it so it can be fixed.")+'</div><textarea class="field mono" id="crashTxt" readonly></textarea><div class="row"><button class="btn small" id="crashCopy">Copy report</button><button class="btn small ghost" id="crashClose">Close</button></div></div>';
+  $("crashTxt").value=text;$("crashClose").addEventListener("click",()=>d.remove());
+  $("crashCopy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(text);toast("Copied",1500);}catch(e){const t=$("crashTxt");t.focus();t.select();toast("Selected. Tap Copy.",2000);}});}
+setTimeout(async()=>{if(!NATIVE||!NATIVE.lastCrash)return;let c="";try{c=NATIVE.lastCrash();}catch(e){}if(!c)return;const sent=await labReport("crash",c);crashSheet(c,sent);},2500);
 function openLabSetup(){openProfile();setTimeout(()=>{const c=$("labCard");if(c){c.scrollIntoView({behavior:"smooth",block:"center"});c.classList.add("flash");setTimeout(()=>c.classList.remove("flash"),1600);}},350);}
 /* a screen recording or other video: pull out just the sound, so it's small enough to send */
 async function videoToWav(f){const buf=await f.arrayBuffer();const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;const probe=new OAC(2,1,22050);
