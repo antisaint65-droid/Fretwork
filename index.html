@@ -611,6 +611,18 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 .progbox{display:grid;gap:10px}.heat{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}.hm{aspect-ratio:1;border-radius:5px;background:rgba(255,255,255,.07)}
 .hm.l1{background:rgba(100,210,255,.25)}.hm.l2{background:rgba(100,210,255,.45)}.hm.l3{background:rgba(100,210,255,.7)}.hm.l4{background:#64D2FF}
 .sprog{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.07)}.sprog .t{font-weight:600}
+
+/* jam mode */
+.jmnow{display:flex;justify-content:space-between;align-items:flex-end;padding:16px 18px;border-radius:22px;background:linear-gradient(150deg,rgba(191,90,242,.22),rgba(10,132,255,.14));border:1px solid rgba(255,255,255,.12)}
+.jmnow b{font:700 46px/1 var(--sans);letter-spacing:-.02em}
+.jmprog{display:flex;flex-wrap:wrap;gap:6px}.jmprog span{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.07);font:600 14px var(--sans);color:rgba(255,255,255,.7);transition:background .15s,color .15s}
+.jmprog span.on{background:#fff;color:#000}
+
+/* lefty mode */
+body.lefty #hwCv,body.lefty #neckCv{transform:scaleX(-1)}
+body.lefty .chord svg,body.lefty #chBig svg,body.lefty .fbscroll svg,body.lefty .vis svg{transform:scaleX(-1)}
+body.lefty .chord svg text,body.lefty #chBig svg text,body.lefty .fbscroll svg text,body.lefty .vis svg text{transform:scaleX(-1);transform-box:fill-box;transform-origin:center}
+body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 </style>
 </head>
 <body>
@@ -719,6 +731,7 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
       <button class="tool" data-open="s-chord"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Guitar Chord Finder</button>
       <button class="tool" data-open="s-scales"><svg viewBox="0 0 24 24"><path d="M4 18l4-4 4 2 4-6 4-3"/><circle cx="4" cy="18" r="1"/><circle cx="20" cy="7" r="1"/></svg>Scales</button>
       <button class="tool" data-open="s-neck"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M8 7v10M13 7v10M18 7v10"/></svg>Fretboard</button>
+      <button class="tool" data-open="s-jam"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><circle cx="17" cy="9" r="3"/><path d="M12 15V4l8-2M5 21h6"/></svg>Jam Mode</button>
       <button class="tool" data-open="s-strum"><svg viewBox="0 0 24 24"><path d="M6 4v12M6 16l-3-3M6 16l3-3M18 20V8M18 8l-3 3M18 8l3 3"/></svg>Rhythm Trainer</button>
       <button class="tool" data-open="s-drill"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 9v4l2 2M9 3h6"/></svg>Chord Drill</button>
     </div>
@@ -745,6 +758,11 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
     <b>My level</b>
     <div class="small muted">Used to suggest songs you can play now.</div>
     <div class="row" id="lvlRow"><button class="chip" data-l="0">Beginner</button><button class="chip" data-l="1">Intermediate</button><button class="chip" data-l="2">Advanced</button></div>
+  </div>
+  <div class="card pad" id="leftyCard">
+    <b>Left-handed</b>
+    <div class="small muted">Mirrors the highway, the neck, chord charts and fretboards, so they match a left-handed guitar.</div>
+    <div class="row"><button class="chip" id="leftyChip" aria-pressed="false">Left-handed: off</button></div>
   </div>
   <div class="card pad">
     <b>Microphone</b>
@@ -895,6 +913,30 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
     <div class="row"><button class="chip" id="rtDrop" aria-pressed="false">Test my timing (clicks drop out)</button><button class="chip" id="rtCal">Calibrate</button></div>
     <div class="status" id="rtSum">Tip: tap Calibrate once so the app knows your phone's sound delay.</div>
     <div class="small muted" id="rtBest"></div>
+  </div>
+</div></section>
+
+<section class="screen" id="s-jam" hidden><div class="wrap">
+  <header class="shead"><button class="circ" data-back aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="stitle"><div class="eyebrow">Tools</div><div class="big">Jam Mode</div></div><span></span></header>
+  <div class="sbody">
+    <p class="muted" style="margin:0">A backing band to play over. Pick a style, then make it yours: key, chords, tempo, drums and sounds. The fretboard shows notes that fit.</p>
+    <div class="chiprow" id="jmGenres"></div>
+    <div class="jmnow"><div><div class="lbl">Now</div><b id="jmNow">E7</b><div class="small muted" id="jmNext"></div></div><div class="small muted" id="jmBeat" style="text-align:right"></div></div>
+    <div class="jmprog" id="jmProg"></div>
+    <button class="btn cta" id="jmGo">Start jamming</button>
+    <div class="blist"><h3>Notes that fit</h3><div class="small muted" id="jmScaleName"></div><div class="fbscroll" id="jmBoard"></div>
+      <label class="small muted" for="jmScale">Scale</label><select class="field" id="jmScale"></select></div>
+    <div class="blist"><h3>Music</h3>
+      <div class="small muted">Key</div><div class="chiprow" id="jmKeys"></div>
+      <label class="small muted" for="jmProgSel">Chords</label><select class="field" id="jmProgSel"></select>
+      <label class="row" style="flex-wrap:nowrap"><span class="small" style="min-width:64px">Tempo</span><input type="range" id="jmBpm" min="50" max="180" value="90"><span class="mono small" id="jmBpmOut">90 BPM</span></label></div>
+    <div class="blist"><h3>Sound</h3>
+      <label class="small muted" for="jmKit">Drums</label><select class="field" id="jmKit"></select>
+      <label class="small muted" for="jmBass">Bass</label><select class="field" id="jmBass"></select>
+      <label class="small muted" for="jmChd">Chords</label><select class="field" id="jmChd"></select>
+      <label class="row" style="flex-wrap:nowrap"><span class="small" style="min-width:64px">Drums</span><input type="range" id="jmVd" min="0" max="100" value="80"></label>
+      <label class="row" style="flex-wrap:nowrap"><span class="small" style="min-width:64px">Bass</span><input type="range" id="jmVb" min="0" max="100" value="80"></label>
+      <label class="row" style="flex-wrap:nowrap"><span class="small" style="min-width:64px">Chords</span><input type="range" id="jmVc" min="0" max="100" value="70"></label></div>
   </div>
 </div></section>
 
@@ -1575,6 +1617,19 @@ if(!Number.isFinite(S.vol))S.vol=0.85;
 S.tabs.forEach(t=>{try{if(t.kind!=="gp"||t.tiPicked||!t.gp||!t.gp.tracks||t.gp.tracks.length<2)return;t.tiPicked=1;const cur=t.gp.tracks[t.ti||0];const p=pickTrack(t.gp.tracks);if(p===(t.ti||0)||!cur||!cur.ev||!cur.ev.length)return;
   const late=cur.ev[0][0]/Math.max(1,cur.total||1);const pe=t.gp.tracks[p].ev;if(late>.12&&pe&&pe.length&&pe[0][0]<cur.ev[0][0]){t.ti=p;delete t.tuning;delete t.capo;delete t.bpm;}}catch(e){}});
 if(Array.isArray(S.tuning)&&S.tuning.length===6&&S.tuning.every(n=>Number.isFinite(n)))OPEN=S.tuning.slice();
+/* ---------- lefty mode: the highway, neck, chord charts and fretboards mirror for left-handed players ---------- */
+let LEFTY=!!S.lefty;
+{const C2=CanvasRenderingContext2D.prototype,of=C2.fillText,os=C2.strokeText,odi=C2.drawImage;
+  const flipAlign=a=>a==="left"||a==="start"?"right":a==="right"||a==="end"?"left":a;
+  /* the canvases are mirrored on screen, so each piece of text is drawn mirrored in place to read normally */
+  const txt=orig=>function(t,x,y,mw){if(!LEFTY)return orig.apply(this,arguments);this.save();this.translate(x,y);this.scale(-1,1);this.textAlign=flipAlign(this.textAlign);if(mw==null)orig.call(this,t,0,0);else orig.call(this,t,0,0,mw);this.restore();};
+  C2.fillText=txt(of);C2.strokeText=txt(os);
+  /* photos (album art) stay the right way round */
+  C2.drawImage=function(img){if(!LEFTY||!(img instanceof HTMLImageElement))return odi.apply(this,arguments);const a=arguments;let dx,dw;if(a.length===3){dx=a[1];dw=img.naturalWidth;}else if(a.length===5){dx=a[1];dw=a[3];}else{dx=a[5];dw=a[7];}
+    const cx=dx+dw/2;this.save();this.translate(cx,0);this.scale(-1,1);this.translate(-cx,0);odi.apply(this,a);this.restore();};}
+function leftyApply(){LEFTY=!!S.lefty;document.body.classList.toggle("lefty",LEFTY);if(typeof HW!=="undefined"){HW.stage=null;HW.w=0;}if(typeof NK!=="undefined"){NK.w=0;NK.base=null;}
+  const c=$("leftyChip");if(c){c.setAttribute("aria-pressed",LEFTY?"true":"false");c.textContent=LEFTY?"Left-handed: on":"Left-handed: off";}
+  document.querySelectorAll(".fbscroll").forEach(el=>{requestAnimationFrame(()=>{el.scrollLeft=LEFTY?el.scrollWidth:0;});});}
 function save(){try{localStorage.setItem("fretwork.v1",JSON.stringify(S));}catch(e){toast("Couldn't save. Your browser storage may be full or blocked.");}}
 const dkey=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function logDay(){const t=dkey(new Date());if(!S.days.includes(t)){S.days.push(t);if(S.days.length>400)S.days=S.days.slice(-400);save();}renderStats();}
@@ -1876,7 +1931,7 @@ LESSONS.push(
   {t:"Arpeggio picking",m:10,chords:["C","Am","G"],goal:"Play chords one string at a time.",tips:["Hold the whole chord shape down, then pick its strings one by one.","Thumb on the bass note, then i, m, a, and back down.","Arpeggio Study plays C, Am, G, C. Start on Easy and use Wait mode."],acts:[["Play Arpeggio Study",()=>openSong("arp")]]},
   {t:"Hammer-ons, pull-offs, slides",m:10,goal:"Connect notes smoothly without picking every one.",tips:["Hammer-on: pick a note, then slam another finger down on a higher fret to sound the next note.","Pull-off: with both fingers down, pick, then flick the higher finger off sideways to sound the lower note.","Slide: pick, then keep pressure on as you slide your finger to the new fret."],acts:[["Play Legato Licks",()=>openSong("legato")]]},
   {t:"Bends and vibrato",m:10,goal:"Make notes sing like a lead guitarist.",tips:["Bend: push the string toward the ceiling with your ring finger, with the 1st and 2nd fingers behind it helping.","Bend until it sounds like the note two frets higher. Check it by playing that note first.","Vibrato: small, even wiggles of a bend, coming from your wrist."],acts:[["Open the scale",()=>openScale(9,"Minor pentatonic",5)]]},
-  {t:"Improvise over the blues",m:12,goal:"Make up your own lead lines.",tips:["Put on the 12-bar blues, then play notes from the E minor pentatonic scale over it.","Short phrases with space between them sound better than nonstop notes.","Land on E when the chord goes back to E7. It sounds like coming home."],acts:[["Play the blues",()=>openAlong("blues")],["E minor pentatonic",()=>openScale(4,"Minor pentatonic",0)]]},
+  {t:"Improvise over the blues",m:12,goal:"Make up your own lead lines.",tips:["Put on the 12-bar blues, then play notes from the E minor pentatonic scale over it.","Short phrases with space between them sound better than nonstop notes.","Land on E when the chord goes back to E7. It sounds like coming home."],acts:[["Jam: blues in E",()=>{S.jam={genre:"blues"};save();openScreen("s-jam");}],["E minor pentatonic",()=>openScale(4,"Minor pentatonic",0)]]},
   {t:"Keys and their chords",m:8,goal:"See why certain chords sound good together.",tips:["A key is a family of chords. In G: G, Am, Bm, C, D and Em.","The I, IV, V and vi chords (G, C, D, Em in G) make up a huge share of popular music.","Fifties Doo-Wop is G, Em, C, D. That's I, vi, IV, V."],acts:[["Play Fifties Doo-Wop",()=>openAlong("fifties")]]},
   {t:"Using a capo",m:6,goal:"Play songs in any key with the chords you know.",tips:["A capo clamps across all strings and acts like a new nut.","Capo 2 plus a G shape sounds like A. Same fingers, higher key.","When a tab says Capo 3, put the capo just behind fret 3 and play the shapes as written."]},
   {t:"Your practice routine",m:5,goal:"Practice in a way that makes you improve fast.",tips:["15 to 20 minutes a day beats two hours once a week.","Warm up with the spider for 2 minutes, do 2 minutes of chord changes, 5 of strumming, then spend the rest on a song you love.","Always start slow, and only speed up once it's clean. Slow and clean is how fast gets built."],acts:[["Rhythm Trainer",()=>openScreen("s-strum")],["Chord Drill",()=>openTrainer("G","C")]]});
@@ -3412,6 +3467,121 @@ function renderProgress(){const box=$("progBox");if(!box)return;const days=new S
   if(songs.length){h+='<b style="margin-top:6px">Your songs</b>';songs.forEach(t=>{const r=t.runs.slice(-12);const W=110,H=30;const pts=r.map((x,i)=>(r.length===1?W/2:i*W/(r.length-1)).toFixed(1)+","+(H-2-(x[1]/100)*(H-4)).toFixed(1)).join(" ");
       const last=r[r.length-1],first=r[0];h+='<div class="sprog"><div><div class="t">'+esc(t.title.split(" · ")[0])+'</div><div class="small muted">'+DIFF_NAMES[last[2]||4]+' · last '+last[1]+'%'+(r.length>1?' · '+(last[1]>=first[1]?'up ':'down ')+Math.abs(last[1]-first[1])+' pts':'')+'</div></div><svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'"><polyline points="'+pts+'" fill="none" stroke="#64D2FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';});}
   else h+='<div class="small muted">Play a song with the mic on, and your scores show up here.</div>';box.innerHTML=h;}
+/* ---------- Jam mode: a backing band you can shape by genre, key, tempo and sound ---------- */
+const PROGS={
+  blues12:{n:"12-bar blues",c:["I7","I7","I7","I7","IV7","IV7","I7","I7","V7","IV7","I7","V7"]},
+  i4v:{n:"I – IV – V",c:["I","I","IV","V"]},pop:{n:"I – V – vi – IV",c:["I","V","vi","IV"]},doowop:{n:"I – vi – IV – V",c:["I","vi","IV","V"]},
+  rock:{n:"I – ♭VII – IV – I",c:["I","bVII","IV","I"]},mrock:{n:"i – ♭VI – ♭VII – i",c:["i","bVI","bVII","i"]},metal:{n:"i5 – ♭VI5 – ♭VII5 – i5",c:["i5","bVI5","bVII5","i5"]},
+  funk:{n:"i7 – IV7 vamp",c:["i7","i7","IV7","IV7"]},reggae:{n:"i – iv",c:["i","i","iv","iv"]},jazz:{n:"ii7 – V7 – Imaj7",c:["ii7","V7","Imaj7","Imaj7"]},
+  lofi:{n:"IVmaj7 – iii7 – ii7 – Imaj7",c:["IVmaj7","iii7","ii7","Imaj7"]},one:{n:"One chord",c:["I"]},minone:{n:"One minor chord",c:["i"]}};
+const D=s=>[...s].map(c=>c==="x"?1:c==="o"?.45:0);
+const GENRES=[
+  {id:"blues",n:"Blues",bpm:88,key:4,prog:"blues12",scale:"Blues",swing:.33,kit:"acoustic",bass:"electric",chords:"clean",
+   K:D("x.......x......."),S:D("....x.......x..."),H:D("x.x.x.x.x.x.x.x."),C:[[0,3],[4,3],[8,3],[12,3]],B:{0:0,2:4,4:7,6:9,8:10,10:9,12:7,14:4}},
+  {id:"rock",n:"Rock",bpm:112,key:9,prog:"rock",scale:"Minor pentatonic",swing:0,kit:"rock",bass:"electric",chords:"dist",
+   K:D("x.....x.x......."),S:D("....x.......x..."),H:D("x.x.x.x.x.x.x.x."),C:[[0,6],[6,2],[8,8]],B:{0:0,2:0,4:0,6:0,8:0,10:0,12:0,14:0}},
+  {id:"pop",n:"Pop",bpm:100,key:7,prog:"pop",scale:"Major pentatonic",swing:0,kit:"electronic",bass:"synth",chords:"piano",
+   K:D("x......x..x....."),S:D("....x.......x..."),H:D("x.x.x.x.x.x.x.x."),C:[[0,6],[6,2],[8,4],[12,4]],B:{0:0,6:0,8:0,12:7}},
+  {id:"funk",n:"Funk",bpm:104,key:4,prog:"funk",scale:"Dorian",swing:.12,kit:"acoustic",bass:"synth",chords:"clean",
+   K:D("x..x..x...x..x.."),S:D("....x..o.o..x..o"),H:D("xxxxxxxxxxxxxxxx"),C:[[2,1],[5,1],[9,1],[11,1],[14,1]],B:{0:0,3:12,6:0,7:10,10:0,13:7,14:12}},
+  {id:"metal",n:"Metal",bpm:140,key:4,prog:"metal",scale:"Natural minor (Aeolian)",swing:0,kit:"rock",bass:"electric",chords:"dist",
+   K:D("xxxxxxxxxxxxxxxx"),S:D("....x.......x..."),H:D("x.x.x.x.x.x.x.x."),C:[[0,2],[2,2],[4,2],[6,2],[8,2],[10,2],[12,2],[14,2]],B:{0:0,2:0,4:0,6:0,8:0,10:0,12:0,14:0},mute:true},
+  {id:"reggae",n:"Reggae",bpm:76,key:9,prog:"reggae",scale:"Natural minor (Aeolian)",swing:.1,kit:"acoustic",bass:"upright",chords:"organ",
+   K:D("........x......."),S:D("........x......."),H:D("..x...x...x...x."),C:[[2,1],[6,1],[10,1],[14,1]],B:{0:0,3:0,6:7,8:0,12:10}},
+  {id:"country",n:"Country",bpm:116,key:7,prog:"i4v",scale:"Major pentatonic",swing:0,kit:"brushes",bass:"upright",chords:"clean",
+   K:D("x.......x......."),S:D("....x.......x..."),H:D("x.xxx.xxx.xxx.xx"),C:[[4,3],[12,3]],B:{0:0,8:7}},
+  {id:"bossa",n:"Bossa nova",bpm:120,key:0,prog:"jazz",scale:"Major (Ionian)",swing:0,kit:"brushes",bass:"upright",chords:"piano",
+   K:D("x..xx..xx..xx..x"),S:D("x..x..x...x..x.."),H:D("x.x.x.x.x.x.x.x."),C:[[0,2],[3,2],[6,2],[10,2],[13,2]],B:{0:0,6:7,8:7,14:0},rim:true},
+  {id:"lofi",n:"Lo-fi",bpm:80,key:0,prog:"lofi",scale:"Major (Ionian)",swing:.28,kit:"electronic",bass:"synth",chords:"pad",
+   K:D("x......x..x....."),S:D("....x.......x..."),H:D("x.x.x.x.x.x.x.x."),C:[[0,16]],B:{0:0,10:7,12:0}},
+  {id:"slowblues",n:"Slow blues",bpm:62,key:9,prog:"blues12",scale:"Minor pentatonic",swing:.33,kit:"brushes",bass:"electric",chords:"organ",
+   K:D("x.......x......."),S:D("....x.......x..."),H:D("x.x.x.x.x.x.x.x."),C:[[0,8],[8,8]],B:{0:0,4:7,8:9,12:7}}];
+const KITS={acoustic:"Acoustic kit",rock:"Big rock kit",electronic:"Electronic (808)",brushes:"Brushes",off:"No drums"};
+const BASSES={electric:"Electric bass",synth:"Synth bass",upright:"Upright bass",off:"No bass"};
+const KEYSND={clean:"Clean guitar",dist:"Distorted guitar",piano:"Electric piano",organ:"Organ",pad:"Synth pad",off:"No chords"};
+const JM={g:GENRES[0],on:false,timer:0,raf:0,t0:0,step:0,nextT:0,bus:null,noise:null,cur:-1};
+function jamSet(){S.jam=S.jam||{};return S.jam;}
+function jamCfg(){const j=jamSet();const g=JM.g;return {key:j.key!=null?j.key:g.key,prog:j.prog||g.prog,bpm:j.bpm||g.bpm,kit:j.kit||g.kit,bass:j.bass||g.bass,chords:j.chords||g.chords,scale:j.scale||g.scale,
+  vd:j.vd!=null?j.vd:.8,vb:j.vb!=null?j.vb:.8,vc:j.vc!=null?j.vc:.7};}
+/* turn I, bVII, ii7, i5 … into a chord name in the chosen key */
+const ROMAN={I:0,II:2,III:4,IV:5,V:7,VI:9,VII:11};
+function romanChord(r,key){const m=/^(b?)([iIvV]+)(maj7|7|5)?$/.exec(r);if(!m)return NOTES[key];const up=m[2]===m[2].toUpperCase();const off=ROMAN[m[2].toUpperCase()]-(m[1]?1:0);const root=NOTES[((key+off)%12+12)%12];
+  const q=m[3]==="5"?"5":m[3]==="maj7"?"maj7":m[3]==="7"?(up?"7":"m7"):(up?"":"m");return root+q;}
+function jamChords(){const c=jamCfg();return PROGS[c.prog].c.map(r=>romanChord(r,c.key));}
+function jamBus(){const c=ac();if(JM.bus&&JM.bus.context===c)return JM.bus;const comp=c.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.connect(c.destination);
+  const mk=v=>{const g=c.createGain();g.gain.value=v;g.connect(comp);return g;};JM.bus={context:c,comp,d:mk(1),b:mk(1),k:mk(1)};
+  const n=c.createBuffer(1,c.sampleRate,c.sampleRate),d=n.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;JM.noise=n;jamVol();return JM.bus;}
+function jamVol(){if(!JM.bus)return;const c=jamCfg();JM.bus.d.gain.value=c.vd;JM.bus.b.gain.value=c.vb;JM.bus.k.gain.value=c.vc;}
+function env(g,t,a,peak,dec,end){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,peak),t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dec);if(end)g.gain.setValueAtTime(0,t+a+dec+.01);}
+function noiseHit(t,dur,type,freq,q,vol,out){const c=ac();const s=c.createBufferSource();s.buffer=JM.noise;const f=c.createBiquadFilter();f.type=type;f.frequency.value=freq;f.Q.value=q||.7;const g=c.createGain();
+  env(g,t,.002,vol,dur);s.connect(f);f.connect(g);g.connect(out);s.start(t,Math.random()*.5);s.stop(t+dur+.05);}
+function toneHit(t,type,f0,f1,dur,vol,out,a){const c=ac();const o=c.createOscillator();o.type=type;o.frequency.setValueAtTime(f0,t);if(f1)o.frequency.exponentialRampToValueAtTime(f1,t+dur*.6);const g=c.createGain();env(g,t,a||.002,vol,dur);o.connect(g);g.connect(out);o.start(t);o.stop(t+dur+.05);}
+function drum(kit,part,t,v){const out=JM.bus.d;if(kit==="off"||v<=0)return;
+  if(part==="K"){if(kit==="electronic"){toneHit(t,"sine",85,38,.75,.95*v,out);}else if(kit==="brushes")toneHit(t,"sine",110,55,.22,.5*v,out);else{toneHit(t,"sine",kit==="rock"?130:150,48,kit==="rock"?.4:.3,.95*v,out);noiseHit(t,.02,"highpass",3000,.7,.25*v,out);}}
+  else if(part==="S"){if(JM.g.rim&&kit!=="electronic"){toneHit(t,"triangle",820,0,.05,.35*v,out);noiseHit(t,.03,"bandpass",2500,3,.25*v,out);return;}
+    if(kit==="electronic"){[0,.012,.024].forEach(d=>noiseHit(t+d,.12,"bandpass",1400,1.2,.55*v,out));}
+    else if(kit==="brushes")noiseHit(t,.28,"lowpass",3500,.5,.32*v,out);
+    else{noiseHit(t,kit==="rock"?.22:.16,"bandpass",kit==="rock"?1800:2200,.9,.7*v,out);toneHit(t,"triangle",200,150,.1,.4*v,out);}}
+  else if(part==="H"){if(kit==="brushes")noiseHit(t,.09,"highpass",5000,.5,.12*v,out);else noiseHit(t,kit==="electronic"?.035:.05,"highpass",kit==="electronic"?9000:7000,.7,.22*v,out);}}
+const mf=m=>440*Math.pow(2,(m-69)/12);
+function bassNote(tone,m,t,dur,v){const out=JM.bus.b;if(tone==="off")return;const c=ac();const f=mf(m);const g=c.createGain();const lp=c.createBiquadFilter();lp.type="lowpass";
+  if(tone==="synth"){lp.frequency.setValueAtTime(1800,t);lp.frequency.exponentialRampToValueAtTime(300,t+.18);lp.Q.value=6;}else lp.frequency.value=tone==="upright"?520:800;
+  const o=c.createOscillator();o.type=tone==="upright"?"triangle":tone==="synth"?"square":"sawtooth";o.frequency.value=f;const o2=c.createOscillator();o2.type="sine";o2.frequency.value=f;
+  const d=Math.max(.08,Math.min(dur,1.6));g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.5*v,t+(tone==="upright"?.02:.006));g.gain.setValueAtTime(.42*v,t+d*.7);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(lp);o2.connect(lp);lp.connect(g);g.connect(out);o.start(t);o2.start(t);o.stop(t+d+.05);o2.stop(t+d+.05);}
+function closeVoice(name){const p=T.parseChord(name);if(!p)return [];const pcs=T.chordPcs(p);const root=48+((p.root-0)%12);const out=[root<52?root+12:root];pcs.forEach(pc=>{if(pc===p.root%12)return;let m=out[0];while(m%12!==pc)m++;out.push(m);});return out;}
+function distOut(){const c=ac();if(JM.dist&&JM.dist.context===c)return JM.dist.node;const ws=c.createWaveShaper();const k=new Float32Array(2048);for(let i=0;i<2048;i++){const x=i/1024-1;k[i]=Math.tanh(x*9);}ws.curve=k;
+  const lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.value=3200;const g=c.createGain();g.gain.value=.22;ws.connect(lp);lp.connect(g);g.connect(JM.bus.k);JM.dist={context:c,node:ws};return ws;}
+function chordHit(tone,name,t,dur,v){if(tone==="off")return;const c=ac();const p=T.parseChord(name);if(!p)return;
+  if(tone==="clean"){const vo=voicingOf(name);if(vo)strumV(vo,t,.22*v*jamCfg().vc,Math.min(dur,2.4));return;}
+  if(tone==="dist"){const r=40+((p.root-4)%12+12)%12;const ns=[r,r+7,r+12];const ws=distOut();const g=c.createGain();const d=JM.g.mute?Math.min(dur,.14):dur;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.8*v,t+.004);g.gain.setValueAtTime(.7*v,t+d*.8);g.gain.exponentialRampToValueAtTime(.0001,t+d);g.connect(ws);
+    ns.forEach((m,i)=>{const o=c.createOscillator();o.type="sawtooth";o.frequency.value=mf(m)*(1+(i-1)*.002);o.connect(g);o.start(t);o.stop(t+d+.05);});return;}
+  const ms=closeVoice(name);const out=JM.bus.k;ms.forEach(m=>{const f=mf(m);const g=c.createGain();g.connect(out);
+    if(tone==="piano"){const o=c.createOscillator();o.type="sine";o.frequency.value=f;const o2=c.createOscillator();o2.type="sine";o2.frequency.value=f*2;const g2=c.createGain();env(g2,t,.003,.25*v,.5);o2.connect(g2);g2.connect(g);
+      env(g,t,.004,.22*v,Math.max(.4,dur*1.1));o.connect(g);o.start(t);o2.start(t);o.stop(t+dur*1.2+.3);o2.stop(t+.6);}
+    else if(tone==="organ"){[1,2,3].forEach((h,i)=>{const o=c.createOscillator();o.type="sine";o.frequency.value=f*h;const gg=c.createGain();gg.gain.value=[.5,.3,.18][i];o.connect(gg);gg.connect(g);o.start(t);o.stop(t+dur+.08);});
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.16*v,t+.01);g.gain.setValueAtTime(.16*v,t+Math.max(.02,dur-.04));g.gain.exponentialRampToValueAtTime(.0001,t+dur+.06);}
+    else{const lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.value=1300;lp.connect(g);[-7,7].forEach(cn=>{const o=c.createOscillator();o.type="sawtooth";o.frequency.value=f*Math.pow(2,cn/1200);o.connect(lp);o.start(t);o.stop(t+dur+.6);});
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.09*v,t+.3);g.gain.setValueAtTime(.09*v,t+Math.max(.31,dur-.1));g.gain.exponentialRampToValueAtTime(.0001,t+dur+.5);}});}
+/* the band: 16 steps per bar, scheduled a little ahead */
+function jamStepT(k){const c=jamCfg();const s16=60/c.bpm/4;let t=JM.t0+k*s16;const sw=JM.g.swing;if(sw){if(JM.g.id==="funk"||JM.g.id==="lofi"){if(k%2===1)t+=sw*s16;}else if(k%4===2)t+=sw*2*s16*.5;}return t;}
+function jamSched(){const c=ac(),cf=jamCfg(),g=JM.g,chords=jamChords();const s16=60/cf.bpm/4;
+  while(jamStepT(JM.step)<c.currentTime+.12){const k=JM.step,t=jamStepT(k);if(k<0){if(k%4===0)click(t,k===-16);JM.step++;continue;}
+    const st=k%16,bar=Math.floor(k/16),ch=chords[bar%chords.length];
+    drum(cf.kit,"K",t,g.K[st]);drum(cf.kit,"S",t,g.S[st]);drum(cf.kit,"H",t,g.H[st]*(st%4===0?1:.75));
+    if(st===0&&bar%4===0&&cf.kit!=="off"&&cf.kit!=="brushes")noiseHit(t,1.1,"highpass",4500,.5,.18,JM.bus.d);
+    const bs=Object.keys(g.B).map(Number).sort((a,b)=>a-b);if(st in g.B){const nx=bs.find(x=>x>st);const dur=((nx!=null?nx:16)-st)*s16*.92;const p=T.parseChord(ch);const r=28+((p.root-4)%12+12)%12;let iv=g.B[st];if(iv===4&&/m/.test(ch.replace("maj","")))iv=3;bassNote(cf.bass,r+iv,t,dur,1);}
+    g.C.forEach(([s0,len])=>{if(s0===st)chordHit(cf.chords,ch,t,len*s16*.95,1);});JM.step++;}}
+function jamStart(){const c=ac();jamBus();jamVol();const cf=jamCfg();JM.t0=c.currentTime+.15+16*(60/cf.bpm/4);JM.step=-16;JM.on=true;JM.cur=-1;clearInterval(JM.timer);JM.timer=setInterval(jamSched,25);jamSched();
+  $("jmGo").textContent="Stop";cancelAnimationFrame(JM.raf);JM.raf=requestAnimationFrame(jamFrame);logDay();}
+function jamStop(){JM.on=false;clearInterval(JM.timer);cancelAnimationFrame(JM.raf);if($("jmGo"))$("jmGo").textContent="Start jamming";JM.cur=-1;jamNow();}
+function jamFrame(){if(!JM.on)return;const c=ac(),cf=jamCfg();const k=Math.floor((c.currentTime-JM.t0)/(60/cf.bpm/4));const bar=Math.floor(k/16);
+  if(k<0)$("jmBeat").textContent="Count-in "+(4-Math.floor((k+16)/4));else $("jmBeat").textContent="Bar "+(bar%jamChords().length+1)+" of "+jamChords().length+" · beat "+(Math.floor((k%16)/4)+1);
+  const ci=k<0?-1:bar%jamChords().length;if(ci!==JM.cur){JM.cur=ci;jamNow();}JM.raf=requestAnimationFrame(jamFrame);}
+function jamNow(){const chords=jamChords();const i=JM.cur<0?0:JM.cur;const now=chords[i],nx=chords[(i+1)%chords.length];$("jmNow").textContent=now;$("jmNext").textContent=chords.length>1?"Next: "+nx:"";
+  $("jmProg").innerHTML=chords.map((c,k)=>'<span class="'+(JM.on&&k===JM.cur?"on":"")+'">'+esc(c)+'</span>').join("");jamBoard(now);}
+function jamBoard(chord){const cf=jamCfg();const sc=T.SCALES.find(s=>s[0]===cf.scale)||T.SCALES[2];const p=T.parseChord(chord);const minor=/m/.test(chord.replace("maj",""));
+  /* the scale starts on the song's key */
+  const root=cf.key;
+  const pcs=new Set(sc[1].map(i=>(root+i)%12));const ct=p?new Set(T.chordPcs(p).map(x=>((x%12)+12)%12)):new Set();
+  $("jmBoard").innerHTML=boardSVG((si,f)=>{const m=OPEN[si]+f,pc=m%12;if(!pcs.has(pc))return null;return {cls:pc===root?"root":ct.has(pc)&&JM.on?"target":"tone",label:NOTES[pc]};});
+  $("jmScaleName").textContent=NOTES[root]+" "+sc[0].replace(/ \(.*\)/,"").toLowerCase()+(JM.on?" · chord tones of "+chord+" glow":"");}
+function jamUI(){const cf=jamCfg();document.querySelectorAll("#jmGenres .chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.g===JM.g.id?"true":"false"));
+  document.querySelectorAll("#jmKeys .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.k===cf.key?"true":"false"));
+  $("jmProgSel").value=cf.prog;$("jmBpm").value=cf.bpm;$("jmBpmOut").textContent=cf.bpm+" BPM";$("jmKit").value=cf.kit;$("jmBass").value=cf.bass;$("jmChd").value=cf.chords;$("jmScale").value=cf.scale;
+  $("jmVd").value=Math.round(cf.vd*100);$("jmVb").value=Math.round(cf.vb*100);$("jmVc").value=Math.round(cf.vc*100);jamNow();}
+function jamGenre(id){JM.g=GENRES.find(g=>g.id===id)||GENRES[0];const j=jamSet();["key","prog","bpm","kit","bass","chords","scale"].forEach(k=>delete j[k]);j.genre=JM.g.id;save();jamUI();}
+{$("jmGenres").innerHTML=GENRES.map(g=>'<button class="chip" data-g="'+g.id+'">'+esc(g.n)+'</button>').join("");$("jmKeys").innerHTML=NOTES.map((n,i)=>'<button class="chip" data-k="'+i+'">'+n+'</button>').join("");
+  Object.entries(PROGS).forEach(([k,p])=>$("jmProgSel").add(new Option(p.n,k)));Object.entries(KITS).forEach(([k,n])=>$("jmKit").add(new Option(n,k)));Object.entries(BASSES).forEach(([k,n])=>$("jmBass").add(new Option(n,k)));
+  Object.entries(KEYSND).forEach(([k,n])=>$("jmChd").add(new Option(n,k)));T.SCALES.slice(0,14).forEach(s=>$("jmScale").add(new Option(s[0],s[0])));
+  document.querySelectorAll("#jmGenres .chip").forEach(b=>b.addEventListener("click",()=>jamGenre(b.dataset.g)));
+  document.querySelectorAll("#jmKeys .chip").forEach(b=>b.addEventListener("click",()=>{jamSet().key=+b.dataset.k;save();jamUI();}));
+  [["jmProgSel","prog"],["jmKit","kit"],["jmBass","bass"],["jmChd","chords"],["jmScale","scale"]].forEach(([id,k])=>$(id).addEventListener("change",e=>{jamSet()[k]=e.target.value;save();jamUI();}));
+  $("jmBpm").addEventListener("input",e=>{const c=ac();const old=jamCfg().bpm;const nb=+e.target.value;if(JM.on){const k=(c.currentTime-JM.t0)/(60/old/4);JM.t0=c.currentTime-k*(60/nb/4);}jamSet().bpm=nb;$("jmBpmOut").textContent=nb+" BPM";});
+  $("jmBpm").addEventListener("change",()=>save());
+  [["jmVd","vd"],["jmVb","vb"],["jmVc","vc"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{jamSet()[k]=+e.target.value/100;jamVol();}));["jmVd","jmVb","jmVc"].forEach(id=>$(id).addEventListener("change",()=>save()));
+  $("jmGo").addEventListener("click",()=>JM.on?jamStop():jamStart());onClose["s-jam"]=()=>jamStop();onOpen["s-jam"]=()=>{JM.g=GENRES.find(g=>g.id===(S.jam&&S.jam.genre))||JM.g;jamUI();};}
+$("leftyChip").addEventListener("click",()=>{S.lefty=!S.lefty;save();leftyApply();toast(S.lefty?"Left-handed: the highway, neck and chord charts are mirrored":"Right-handed layout",2400);});leftyApply();
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
@@ -3527,9 +3697,10 @@ const TOUR_STEPS=[
   {p:"tune",s:".tzmeterwrap",t:"Tuner",b:"Tap the light to start listening, then pluck a string. The needle shows how far off you are. Green in the middle means in tune."},
   {p:"tune",s:"#tzBoard",t:"Hear each string",b:"Tap a string to hear the note it should be. It turns green when you match it."},
   {p:"tune",s:".tzpanel",t:"Other tunings",b:"Tap SELECT for tunings like Drop D or half step down. Fretwork warns you if a song needs a different one."},
-  {p:"tools",s:".pg[data-p='tools'] .gin",t:"Tools",b:"Chord charts, scales, the Rhythm Trainer for strumming, Chord Drill for quick chord changes, the Ear Trainer, the Song Builder and more."},
+  {p:"tools",s:".pg[data-p='tools'] .gin",t:"Tools",b:"Jam Mode gives you a backing band in any style: blues, rock, metal, funk, reggae and more, with your choice of key, tempo, drums and sounds. Plus the Rhythm Trainer, Chord Drill, Ear Trainer, scales and the Song Builder."},
   {p:"me",s:"#progBox",t:"Your progress",b:"Your last four weeks of practice, and how your score on each song is climbing."},
   {p:"me",s:"#lvlRow",t:"Your level",b:"Set how much you can play, and Fretwork suggests songs that fit."},
+  {p:"me",s:"#leftyCard",t:"Left-handed?",b:"Turn this on and the highway, neck, chord charts and fretboards all mirror to match a left-handed guitar."},
   {p:"me",s:"#pMic",t:"Microphone",b:"Lets Fretwork hear you play. The sound is checked on your phone and never sent anywhere."},
   {p:"me",s:"#bkCard",t:"Backup",b:"Keeps your songs and progress safe. With your lab connected, it backs up on its own once a day."},
   {p:"me",s:"#tourCard",t:"See this again",b:"Come back here any time to take the tour again."},
