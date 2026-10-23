@@ -3494,7 +3494,7 @@ function loopSection(){if(TP.secB!=null){TP.secA=TP.secB=null;$("tpSecChip").hid
   if(REC.on)recCmd("seek",Math.max(0,(beatToRec(a)-1.5)*1000));else{tpPause();TP.pos=a;tpPlay();}toast("Looping "+label,1500);}
 /* ---------- chord chart from the recording ---------- */
 const CC={on:false,frames:[],t0:0,sub:null,timer:0};
-async function chordChartToggle(t){if(CC.on){chordChartStop(true);return;}if(!(await needMic()))return;await recPoll();CC.on=true;CC.frames=[];CC.meta=t;CC.t0=performance.now();CC.useRec=REC.src!==""&&REC.playing;
+async function chordChartToggle(t){if(CC.on){chordChartStop(true);return;}if(typeof aiOn==="function"&&aiOn("chordrec")){aiChordChart(t);return;}if(!(await needMic()))return;await recPoll();CC.on=true;CC.frames=[];CC.meta=t;CC.t0=performance.now();CC.useRec=REC.src!==""&&REC.playing;
   CC.sub=fr=>{if(fr.rms<GATE*1.3)return;const ch=fr.chroma();const id=identifyChord(ch,fr.note>=0?fr.note%12:null);CC.frames.push({t:CC.useRec?recPos():(performance.now()-CC.t0)/1000,name:id.best.name,sc:id.best.score});};
   Mic.subs.add(CC.sub);clearInterval(CC.timer);CC.timer=setInterval(()=>{if(CC.useRec)recPoll();const last=CC.frames[CC.frames.length-1];const el=$("ccLive");if(el)el.textContent="Listening · "+(last?last.name:"…")+" · "+fmtDur(CC.useRec?recPos():(performance.now()-CC.t0)/1000);},500);ccUI();}
 function chordChartStop(keep){Mic.subs.delete(CC.sub);clearInterval(CC.timer);CC.on=false;ccUI();if(!keep)return;const segs=chordSegments(CC.frames);if(segs.length<2){toast("Not enough to make a chart. Play the song out loud and listen for at least 20 seconds.",4500);return;}
@@ -3579,7 +3579,7 @@ async function labImport(j,btn){btn.disabled=true;btn.textContent="Getting…";
     const m=JSON.parse(new TextDecoder().decode(meta));if(gtr)await idbPut(j.id+":guitar",new Blob([gtr],{type:"audio/mpeg"}));if(bk)await idbPut(j.id+":backing",new Blob([bk],{type:"audio/mpeg"}));
     const before=S.tabs.length;await importGp(gp5,j.title+(j.artist?" - "+j.artist:""));const t=S.tabs[S.tabs.length-1];
     if(t&&S.tabs.length>before){t.lab=j.id;t.title=j.title+(j.artist?" · "+j.artist:"");if(Array.isArray(m.syncPts)&&m.syncPts.length)t.syncPts=m.syncPts;t.tiPicked=1;j.tab=t.id;}
-    j.st="done";save();labJobsUI();renderSongLists();if(t)openSong(t.id);toast("Draft tab added. It's a starting point: fix notes as you learn it.",4500);}
+    j.st="done";save();labJobsUI();renderSongLists();if(t)openSong(t.id);toast("Draft tab added. It's a starting point: fix notes as you learn it.",4500);if(t&&gtr&&typeof aiOn==="function"&&aiOn("labcheck"))setTimeout(()=>labAiCheck(t,gtr),4800);}
   catch(e){btn.disabled=false;btn.textContent="Get";toast("Couldn't download it: "+(e.message||e),4500);}}
 /* Song Master: play the recording (full, guitar only, or without guitar) and the tab follows it */
 const LABP={el:null,id:null,mode:"full",urls:{}};
@@ -4061,6 +4061,37 @@ async function tabPhoto(){if(!aiNeed("tabphoto"))return;const f=await pickImage(
   catch(e){msg.textContent=aiErrMsg(e)||"Couldn't read that photo.";}}
 $("chHand").addEventListener("click",()=>handCheck("chord"));$("chListen").addEventListener("click",()=>listenCheck("chord"));
 $("tpHand").addEventListener("click",()=>handCheck("song"));$("tpListen").addEventListener("click",()=>listenCheck("song"));$("tabPhoto").addEventListener("click",tabPhoto);
+/* ---------- Gemini on recordings: chord charts and lab tab checks ---------- */
+const b64u8=u8=>{let bin="";for(let i=0;i<u8.length;i+=32768)bin+=String.fromCharCode.apply(null,u8.subarray(i,i+32768));return btoa(bin);};
+const CHORDJSON='{"key":"like E minor","bpm":120,"tuning":"Standard or the tuning you hear","sections":[{"name":"Intro, Verse, Chorus, Bridge, Solo or Outro","start":0.0}],"chords":[{"start":0.0,"end":2.0,"chord":"Em"}]}';
+function aiSegs(j,offset){return (j.chords||[]).map(c=>({name:String(c.chord||"").replace(/\s+/g,"").replace(/maj$/,""),t0:(+c.start||0)+(offset||0),t1:(+c.end||0)+(offset||0)})).filter(s=>s.name&&s.name!=="N"&&s.name!=="N.C."&&s.t1>s.t0+.25&&T.parseChord(s.name));}
+/* chord chart from 40 seconds of a song playing out loud */
+async function aiChordChart(t){if(!aiNeed("chordrec"))return;await recPoll().catch(()=>{});const useRec=REC.src!==""&&REC.playing;const start=useRec?recPos():0;CC.on=true;ccUI();
+  const blob=await recordClip(40,k=>{const el=$("ccLive");if(el){el.hidden=false;el.textContent="Recording for Gemini… "+k+" s (play the song out loud)";}});CC.on=false;ccUI();if(!blob)return;
+  toast("Working out the chords…",3000);
+  try{const j=await gem("chordrec",[{text:"This is about 40 seconds of a song playing in a room, recorded on a phone. Work out the chord progression a guitarist would play. Times are seconds from the start of this clip. Reply with ONLY JSON like "+CHORDJSON+". Use simple chord names (G, Em, C, D7, F#m). No lyrics."},await wavPart(blob,41)],{json:true,max:2000,temp:.2,timeout:60000});
+    const segs=aiSegs(j,start);if(segs.length<2){toast("Couldn't hear clear chords. Turn the music up and try again.",4000);return;}chordTabFrom(segs,t||CC.meta||{},useRec,j);}
+  catch(e){toast(aiErrMsg(e)||"Couldn't make the chart.",4000);}}
+/* make a playable chord tab from chord times (shared by the mic chart and Gemini) */
+function chordTabFrom(segs,m,useRec,extra){const bpm=120,bps=bpm/60,ev=[];segs.forEach(sg=>{const v=voicingOf(sg.name);if(!v)return;const row=[];v.f.forEach((f,i)=>{if(f>=0)row.push(i,f);});if(!row.length)return;
+    for(let t=sg.t0;t<sg.t1-.2;t+=1){ev.push([Math.round(t*bps*1000)/1000,Math.min(2,(sg.t1-t)*bps)].concat(row));}});
+  if(!ev.length){toast("Couldn't turn those chords into shapes.",3000);return;}const total=Math.ceil(ev[ev.length-1][0]+4);const bars=[];for(let b=0;b<total;b+=4)bars.push(b);
+  const secs=extra&&extra.sections?extra.sections.map(s=>({beat:Math.max(0,(+s.start||0)*bps),name:String(s.name||"")})).filter(s=>s.name):undefined;
+  const title=npClean(m.title||"My recording")+" (chords)";const tr={name:"Chords",tuning:OPEN.slice(),capo:0,ev,bpm,bpb:4,total,bars};if(secs&&secs.length)tr.secs=secs;
+  const gp={title,artist:npMainArtist(m.artist||""),album:m.album||"",tracks:[tr]};
+  const id="c"+Date.now();S.tabs.push({id,title:title+(gp.artist?" · "+gp.artist:""),kind:"gp",gp,ti:0,syncKey:m.title?songKey(m.title,m.artist):"",syncOff:useRec?0:undefined});save();renderSongLists();toast("Chord chart saved: "+segs.length+" chord changes",2500);openSong(id);}
+/* lab tab check: sections, chord names and an easy chords part, from the isolated guitar */
+function ptsBeat(P,sec,bpm){const s=60/(bpm||120);if(!P||!P.length)return sec/s;if(P.length===1)return P[0][1]+(sec-P[0][0])/s;let i=0;while(i<P.length-2&&sec>P[i+1][0])i++;const [t0,b0]=P[i],[t1,b1]=P[i+1];return b0+(sec-t0)*(b1-b0)/Math.max(.05,t1-t0);}
+async function labAiCheck(t,gtr){if(!aiOn("labcheck")||!t||!t.gp||!gtr)return;if(gtr.length>14*1048576){toast("That recording is too long for the Gemini check.",3000);return;}toast("Gemini is checking the tab: sections and chords…",3500);
+  try{const j=await gem("labcheck",[{text:"This is the isolated guitar track of a song (it may have a little bleed from other instruments). Times are seconds from the start of this audio. Label the song sections and work out the chord a rhythm guitarist would play for each part. Reply with ONLY JSON like "+CHORDJSON+". No lyrics."},{inline_data:{mime_type:"audio/mp3",data:b64u8(gtr)}}],{json:true,max:4000,temp:.2,timeout:90000});
+    const tr0=t.gp.tracks[0];const P=t.syncPts;const bpm=tr0.bpm||120;const secs=(j.sections||[]).map(s=>({beat:Math.max(0,ptsBeat(P,+s.start||0,bpm)),name:String(s.name||"")})).filter(s=>s.name).sort((a,b)=>a.beat-b.beat);
+    if(secs.length)t.gp.tracks.forEach(tr=>tr.secs=secs);
+    const segs=aiSegs(j,0);const ev=[];segs.forEach(sg=>{const v=voicingOf(sg.name);if(!v)return;const row=[];v.f.forEach((f,i)=>{if(f>=0)row.push(i,f);});const b0=ptsBeat(P,sg.t0,bpm),b1=ptsBeat(P,sg.t1,bpm);
+      for(let b=Math.ceil(b0*2)/2;b<b1-.25;b+=2)ev.push([Math.round(b*1000)/1000,Math.min(2,b1-b)].concat(row));});
+    if(ev.length>=4&&!t.gp.tracks.some(x=>x.name==="Easy chords"))t.gp.tracks.push({name:"Easy chords",tuning:STD.slice(),capo:0,ev,bpm:tr0.bpm,bpb:tr0.bpb||4,total:Math.max(tr0.total,Math.ceil(ev[ev.length-1][0]+4)),bars:tr0.bars});
+    if(j.tuning&&!/^standard/i.test(j.tuning))t.aiTuning=String(j.tuning);save();
+    if(TP.tab&&TP.tab.id===t.id)selectTab(t.id);toast((secs.length?"Added "+secs.length+" section labels":"Checked")+(ev.length>=4?" and an Easy chords part (pick it in ••• → Track)":"")+".",5000);}
+  catch(e){toast(aiErrMsg(e)||"The Gemini check didn't work this time.",4000);}}
 function lvlUI(){document.querySelectorAll("#lvlRow .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.l===myLevel()?"true":"false"));}
 document.querySelectorAll("#lvlRow .chip").forEach(b=>b.addEventListener("click",()=>{S.level=+b.dataset.l;save();lvlUI();renderLearn();}));lvlUI();
 /* ---------- small print lives behind little "i" buttons ---------- */
@@ -4179,6 +4210,7 @@ const TOUR_STEPS=[
   {p:"tools",s:".pg[data-p='tools'] .gin",t:"Tools",b:"Music Theory shows the 12 notes, the circle of fifths, scales and chords, and you can tap everything to hear it. Jam Mode gives you a backing band in any style: blues, rock, metal, funk, reggae and more, with your choice of key, tempo, drums and sounds. Plus the Rhythm Trainer, Chord Drill, Ear Trainer, scales and the Song Builder."},
   {p:"me",s:"#progBox",t:"Your progress",b:"Your last four weeks of practice, and how your score on each song is climbing."},
   {p:"me",s:"#lvlRow",t:"Your level",b:"Set how much you can play, and Fretwork suggests songs that fit."},
+  {p:"me",s:"#aiCard",t:"Your AI teacher",b:"Link your own free Gemini key, and Fretwork can talk you through tips in a natural voice, answer your questions, check a photo of your hands, listen to you play and more. You choose exactly which features it uses."},
   {p:"me",s:"#leftyCard",t:"Left-handed?",b:"Turn this on and the highway, neck, chord charts and fretboards all mirror to match a left-handed guitar."},
   {p:"me",s:"#pMic",t:"Microphone",b:"Lets Fretwork hear you play. The sound is checked on your phone and never sent anywhere."},
   {p:"me",s:"#bkCard",t:"Backup",b:"Keeps your songs and progress safe. With your lab connected, it backs up on its own once a day."},
