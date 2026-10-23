@@ -594,6 +594,14 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
 .rslot.now{border-color:#fff;transform:scale(1.06);box-shadow:0 0 16px rgba(255,255,255,.25)}
 .rslot.good{background:rgba(48,209,88,.45);border-color:#30D158}.rslot.ok{background:rgba(255,214,10,.35);border-color:#FFD60A}.rslot.bad{background:rgba(255,69,58,.35);border-color:#FF453A}
 .rlive{display:flex;justify-content:space-between;align-items:baseline}.rlive b{font:700 26px var(--sans)}
+
+/* chord "show me how" */
+#chBig .fdot{transform-box:fill-box;transform-origin:center;transition:opacity .2s}
+#chBig .fdot.wait{opacity:0}
+#chBig .fdot.land{animation:fland .55s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes fland{0%{opacity:0;transform:translateY(-30px) scale(1.5)}60%{opacity:1;transform:translateY(0) scale(.92)}100%{opacity:1;transform:scale(1)}}
+#chFingers>div{transition:color .2s,background .2s;border-radius:10px;padding:2px 6px;margin:0 -6px}
+#chFingers>div.hl{color:#fff;background:rgba(100,210,255,.18)}
 </style>
 </head>
 <body>
@@ -763,6 +771,7 @@ details.drop>.slist,details.drop>.dropbody{padding:0 10px 12px;display:grid;gap:
     <button class="circ" id="chMore" aria-label="Strum this chord"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></button></header>
   <div class="sbody">
     <div class="bigboard" id="chBig"></div>
+    <button class="btn" id="chShow">Show me how</button>
     <div class="chips" id="chShapes"></div>
     <div class="blist"><h3>Finger Positions</h3><div id="chFingers" class="small muted"></div></div>
     <div class="blist"><h3>Hand Position Tips</h3><div id="chTips" class="small muted"></div></div>
@@ -1537,6 +1546,11 @@ const FN=FONTS.note+", Inter, sans-serif",FBR=FONTS.brand+", Inter, sans-serif";
 {const r=document.documentElement.style;r.setProperty("--sans",FONTS.ui+", Inter, -apple-system, system-ui, sans-serif");r.setProperty("--brand",FONTS.brand+", Inter, sans-serif");r.setProperty("--note",FONTS.note+", Inter, sans-serif");}
 "use strict";
 const T=Theory,NOTES=T.NOTES,STD=T.OPEN;let OPEN=STD.slice();
+{const vo=T.voicings;T.voicings=function(p,tun){const base=vo.apply(this,arguments);if(!p||p.type!=="5"||p.bass!=null)return base;const t=tun||STD;if(!T.sameTuning(t,STD))return base;
+  const fe=((p.root-4)%12+12)%12,fa=((p.root-9)%12+12)%12;const out=[];
+  if(fe<=8)out.push(fe===0?{f:[0,2,2,-1,-1,-1],g:[0,1,2,0,0,0],barre:null,pos:0,tun:t}:{f:[fe,fe+2,fe+2,-1,-1,-1],g:[1,3,4,0,0,0],barre:null,pos:fe,tun:t});
+  if(fa<=8)out.push(fa===0?{f:[-1,0,2,2,-1,-1],g:[0,0,1,2,0,0],barre:null,pos:0,tun:t}:{f:[-1,fa,fa+2,fa+2,-1,-1],g:[0,1,3,4,0,0],barre:null,pos:fa,tun:t});
+  out.sort((a,b)=>a.pos-b.pos);return out.concat(base);};}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let toastT;function toast(msg,ms){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms||3800);}
@@ -1727,10 +1741,10 @@ function bigChordSVG(v){const fr=v.f.filter(x=>x>0);const maxF=fr.length?Math.ma
   for(let j=1;j<=5;j++)s+='<rect x="36" y="'+(Y(j)+1.5)+'" width="248" height="3" fill="#000" fill-opacity=".35"/><rect x="33" y="'+(Y(j)-2)+'" width="254" height="4" fill="url(#bcwF)"/>';
   if(start===1)s+='<rect x="32" y="50" width="256" height="15" rx="2" fill="#EDE3CE"/><rect x="32" y="62" width="256" height="3" fill="#000" fill-opacity=".25"/>';else s+='<text x="6" y="'+(Y(0)+42)+'" fill="#8A979E" font-family="JetBrains Mono, monospace" font-size="15" font-weight="700">'+start+'fr</text>';
   const tw=[3.6,3.1,2.6,2.1,1.6,1.3];for(let i=0;i<6;i++){const x=X(i),t=tw[i];s+='<rect x="'+(x+t*.6+2)+'" y="56" width="'+Math.max(1,t*.7)+'" height="394" fill="#000" fill-opacity=".4"/><rect x="'+(x-t/2)+'" y="50" width="'+t+'" height="400" fill="url(#bcw'+(i<=3?'W':'S')+')"/>'+(i<=3?'<rect x="'+(x-t/2)+'" y="50" width="'+t+'" height="400" fill="url(#bcwH)"/>':'');}
-  if(v.barre){const y=Y(v.barre.fret-start)+37;s+='<rect x="'+(X(v.barre.from)-20)+'" y="'+(y-19)+'" width="'+(X(v.barre.to)-X(v.barre.from)+40)+'" height="38" rx="19" fill="url(#bd)" stroke="#06403A" stroke-opacity=".4"/><text x="'+X(v.barre.from)+'" y="'+(y+7)+'" text-anchor="middle" fill="#02110F" font-family="Inter, sans-serif" font-size="19" font-weight="800">1</text>';}
+  if(v.barre){const y=Y(v.barre.fret-start)+37;s+='<g class="fdot" data-g="1"><rect x="'+(X(v.barre.from)-20)+'" y="'+(y-19)+'" width="'+(X(v.barre.to)-X(v.barre.from)+40)+'" height="38" rx="19" fill="url(#bd)" stroke="#06403A" stroke-opacity=".4"/><text x="'+X(v.barre.from)+'" y="'+(y+7)+'" text-anchor="middle" fill="#02110F" font-family="Inter, sans-serif" font-size="19" font-weight="800">1</text></g>';}
   v.f.forEach((f,i)=>{const x=X(i);if(f<0)s+='<g stroke="#8A979E" stroke-width="2.6" stroke-linecap="round"><line x1="'+(x-7)+'" y1="22" x2="'+(x+7)+'" y2="36"/><line x1="'+(x+7)+'" y1="22" x2="'+(x-7)+'" y2="36"/></g>';
     else if(f===0)s+='<circle cx="'+x+'" cy="29" r="8" fill="none" stroke="#8A979E" stroke-width="2.6"/>';
-    else{if(v.barre&&f===v.barre.fret&&i>=v.barre.from&&i<=v.barre.to)return;const y=Y(f-start)+37;s+='<circle cx="'+(x+1.5)+'" cy="'+(y+2.5)+'" r="20" fill="#000" fill-opacity=".35"/><circle cx="'+x+'" cy="'+y+'" r="20" fill="url(#bd)"/>'+(v.g&&v.g[i]?'<text x="'+x+'" y="'+(y+7)+'" text-anchor="middle" fill="#02110F" font-family="Inter, sans-serif" font-size="19" font-weight="800">'+v.g[i]+'</text>':'');}});
+    else{if(v.barre&&f===v.barre.fret&&i>=v.barre.from&&i<=v.barre.to)return;const y=Y(f-start)+37;s+='<g class="fdot" data-g="'+((v.g&&v.g[i])||0)+'" data-s="'+i+'"><circle cx="'+(x+1.5)+'" cy="'+(y+2.5)+'" r="20" fill="#000" fill-opacity=".35"/><circle cx="'+x+'" cy="'+y+'" r="20" fill="url(#bd)"/>'+(v.g&&v.g[i]?'<text x="'+x+'" y="'+(y+7)+'" text-anchor="middle" fill="#02110F" font-family="Inter, sans-serif" font-size="19" font-weight="800">'+v.g[i]+'</text>':'')+'</g>';}});
   return s+'</svg>';}
 function diagramSVG(v,hl){hl=hl||{};const bad=new Set(hl.bad||[]);const fr=v.f.filter(x=>x>0);const maxF=fr.length?Math.max(...fr):0,minF=fr.length?Math.min(...fr):0;const start=maxF<=4?1:minF;
   const X=i=>22+i*17,Y=j=>30+j*24;let s='<svg viewBox="0 0 126 132" aria-hidden="true">';
@@ -1781,7 +1795,7 @@ document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",
 
 /* ================= learn ================= */
 const LESSONS=[
-  {t:"Tune your guitar",m:3,goal:"Get all six strings in tune before every session.",tips:["Open strings from thickest to thinnest: E A D G B E.","Tap Listen in the tuner, pluck one string and let it ring. Turn the peg until the pointer turns green.","Tighten to raise the pitch, loosen to lower it."],acts:[["Open the tuner",()=>{closeAllScreens();show("tools");}]]},
+  {t:"Tune your guitar",m:3,goal:"Get all six strings in tune before every session.",tips:["Open strings from thickest to thinnest: E A D G B E.","In the Tuner, tap the light to start listening, pluck one string and let it ring. Turn its peg until the light in the middle turns green.","Tighten to raise the pitch, loosen to lower it."],acts:[["Open the tuner",()=>{closeAllScreens();show("tools");}]]},
   {t:"Your first chord: Em",m:5,chords:["Em"],goal:"Ring all six strings cleanly on E minor.",tips:["Middle finger on the A string, 2nd fret. Ring finger on the D string, 2nd fret.","Press just behind the fret wire, on your fingertips, with a curved hand.","Use Practice & Detect to hear if every string rings."],acts:[["Practice Em",()=>openChord("Em")]]},
   {t:"Add A minor",m:5,chords:["Am"],goal:"Play Am with the low E string silent.",tips:["Same middle and ring finger shape as Em, moved over one string.","Add your index finger on the B string, 1st fret.","Start your strum from the A string."],acts:[["Practice Am",()=>openChord("Am")]]},
   {t:"Switch Em and Am",m:8,chords:["Em","Am"],goal:"Change between two chords in time.",tips:["Move middle and ring fingers together as one shape.","In the Chord Drill, 30 clean switches a minute is a strong target.","Then play along at 60 to 70 BPM. Slow and clean beats fast and messy."],acts:[["Drill Em ⇄ Am",()=>openTrainer("Em","Am")],["Play Two-Chord Rock",()=>openAlong("rock")]]},
@@ -1792,7 +1806,7 @@ const LESSONS=[
   {t:"Learn the neck",m:10,goal:"Find any natural note on the low E and A strings.",tips:["The musical alphabet is A B C D E F G. B to C and E to F are one fret apart; every other pair is two frets.","Learn the low E string first, then the A string.","Play Find the note until you can answer in under 3 seconds."],acts:[["Open the fretboard",()=>openScreen("s-neck")]]},
   {t:"A minor pentatonic",m:12,goal:"Play the most-used soloing scale in rock and blues.",tips:["Start with your index finger on the 5th fret of the low E string. That's A, the root.","Use one finger per fret across frets 5 to 8.","Practice with mic walks you up and back down, one note at a time."],acts:[["Open the scale",()=>openScale(9,"Minor pentatonic",5)]]},
   {t:"12-bar blues in E",m:12,chords:["E7","A7","B7"],goal:"Get through all 12 bars of a blues.",tips:["Four bars of E7, two of A7, two of E7, then B7, A7, E7, B7.","B7 uses all four fingers. Learn it slowly.","Then improvise over it with the E minor pentatonic scale."],acts:[["Drill E7 ⇄ B7",()=>openTrainer("E7","B7")],["Play the blues",()=>openAlong("blues")]]},
-  {t:"Play a song you love",m:15,goal:"Import a tab and play along with it.",tips:["In Songs, find the song on GProTab. Its free Guitar Pro files give the exact rhythm.","Search the artist, then tap Get. The song lands in Fretwork, ready to play.","Use Wait mode on riffs, and slow the speed before you speed up."],acts:[["Add a song",()=>{closeAllScreens();show("songs");setTimeout(()=>$("importSec").scrollIntoView({behavior:"smooth"}),50);}]]}
+  {t:"Play a song you love",m:15,goal:"Import a tab and play along with it.",tips:["On the Find a tab page, type the artist and song and tap Search. The best match goes on top.","Tap Get, and the song opens in Song Master, ready to play.","Start on Level: Easy, use Wait mode on riffs, and slow the speed down before you speed up."],acts:[["Find a song",()=>{closeAllScreens();show("songs");}]]}
 ];
 const MODULES=[
   {t:"Intro to Guitar",l:[0,1,2],art:"strings"},{t:"Core Chords",l:[3,4,5],art:"dots"},{t:"Intro to Tabs",l:[6,11],art:"tab"},
@@ -1804,7 +1818,7 @@ const ART={
   wave:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><path d="M40 70 Q60 20 80 70 T120 70 T160 70 T200 70" fill="none" stroke="#1FE0CC" stroke-width="3" opacity=".6"/><path d="M40 90 Q60 60 80 90 T120 90 T160 90 T200 90" fill="none" stroke="#3FE6D4" stroke-width="1.5" opacity=".35"/></svg>',
   neck:'<svg viewBox="0 0 200 140" preserveAspectRatio="xMaxYMid slice"><rect x="30" y="30" width="190" height="80" fill="#1C1214" opacity=".6"/><g stroke="#A9B4B9" opacity=".55">'+[0,1,2,3,4].map(i=>'<line x1="'+(50+i*38)+'" x2="'+(50+i*38)+'" y1="30" y2="110"/>').join("")+'</g><g fill="#1FE0CC"><circle cx="69" cy="50" r="7"/><circle cx="107" cy="70" r="7"/><circle cx="145" cy="90" r="7"/></g></svg>'};
 const CHECK='<svg viewBox="0 0 24 24" width="18" height="18" style="stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5 9-10"/></svg>';
-function renderModules(){const box=$("modules");box.innerHTML="";const nextLesson=LESSONS.findIndex((_,i)=>!S.done[i]);
+function renderModules(){const box=$("modules");box.innerHTML="";const nextLesson=nextLessonIdx();
   MODULES.forEach((M,mi)=>{const done=M.l.filter(i=>S.done[i]).length;const pct=Math.round(100*done/M.l.length);const active=M.l.includes(nextLesson);
     const b=document.createElement("button");b.className="mod"+(active?" active":"");b.type="button";
     b.innerHTML='<div class="art">'+ART[M.art]+'</div><h3>'+M.t+'</h3>'+(pct===100?'<span class="check">'+CHECK+'</span><div class="st">COMPLETED</div>':'<div class="st">'+(done?pct+"% PROGRESS":active?"UP NEXT":M.l.length+" LESSONS")+(done||active?'<div class="pb"><i style="width:'+Math.max(pct,active?4:0)+'%"></i></div>':'')+'</div>');
@@ -1813,9 +1827,9 @@ function renderModules(){const box=$("modules");box.innerHTML="";const nextLesso
   $("streakPill").innerHTML="<b>"+streak()+"</b> day streak";}
 let curModule=0;
 function openModule(mi){curModule=mi;renderModuleLessons();openScreen("s-module");}
-function renderModuleLessons(){const M=MODULES[curModule];$("modTitle").textContent=M.t;const box=$("modLessons");box.innerHTML="";const nextIdx=LESSONS.findIndex((_,i)=>!S.done[i]);
+function renderModuleLessons(){const M=MODULES[curModule];$("modTitle").textContent=M.t;const box=$("modLessons");box.innerHTML="";const nextIdx=nextLessonIdx();
   M.l.forEach(i=>{const L=LESSONS[i];const d=document.createElement("details");d.className="lesson"+(S.done[i]?" done":"")+(i===nextIdx?" next":"");if(i===nextIdx||M.l.length===1)d.open=true;
-    d.innerHTML='<summary><div class="lnum">'+(S.done[i]?"✓":i+1)+'</div><div><div class="ltitle">'+L.t+'</div><div class="lmeta">'+L.m+' min · '+(S.done[i]?"Done":i===nextIdx?"Up next":"Not started")+'</div></div><span class="muted">▾</span></summary>';
+    d.innerHTML='<summary><div class="lnum">'+(S.done[i]?"✓":ORDER().indexOf(i)+1)+'</div><div><div class="ltitle">'+L.t+'</div><div class="lmeta">'+L.m+' min · '+(S.done[i]?"Done":i===nextIdx?"Up next":"Not started")+'</div></div><span class="muted">▾</span></summary>';
     const body=document.createElement("div");body.className="lbody";body.innerHTML='<div><div class="eyebrow">Goal</div><div>'+L.goal+'</div></div><ul>'+L.tips.map(t=>"<li>"+t+"</li>").join("")+"</ul>";
     if(L.chords){const dg=document.createElement("div");dg.className="row";L.chords.forEach(c=>dg.appendChild(chordCard(c,{sm:true})));body.appendChild(dg);}
     const acts=document.createElement("div");acts.className="row";(L.acts||[]).forEach(([lab,fn])=>{const b=document.createElement("button");b.className="btn ghost small";b.textContent=lab;b.addEventListener("click",fn);acts.appendChild(b);});
@@ -1829,11 +1843,55 @@ function odeText(){const E=[0,0],F=[0,1],G=[0,3],D=[1,3],C=[1,1];const line=[E,E
   mel.forEach(n=>{if(beat>0&&beat%4===0)rows.forEach(r=>r.push("|"));const cols=Math.round(n[2]*CPB);for(let c=0;c<cols;c++)rows.forEach((r,ri)=>r.push(c===0&&ri===n[0]?String(n[1]):"-"));beat+=n[2];});
   return "Tempo: 100\n"+["e","B","G","D","A","E"].map((l,i)=>l+"|-"+rows[i].join("")+"-|").join("\n");}
 const BUILTIN=[{id:"ode",title:"Ode to Joy",text:odeText(),builtin:true}];
+/* ---------- the full course: new lessons (old ones keep their place so progress is safe) ---------- */
+const openRT=id=>{RT.pat=STRUMS.find(s=>s.id===id)||STRUMS[0];rtBuild();openScreen("s-strum");};
+LESSONS.push(
+  {t:"Meet your guitar",m:4,goal:"Know the parts of the guitar and how to hold it.",tips:["Headstock and tuning pegs at the top, then the neck with its metal frets, then the body. The strings run from the pegs to the bridge.","Sit up straight. The guitar's waist rests on your right leg (left leg if you play left-handed), body tilted slightly back so you can see the top.","Hold the pick between your thumb and the side of your index finger, with just the tip showing. Grip it firmly, but keep your wrist loose."],acts:[["Hear the open strings",()=>{closeAllScreens();show("tools");}]]},
+  {t:"Your fretting hand",m:6,goal:"Press notes cleanly with each finger.",tips:["Fingers are numbered: 1 index, 2 middle, 3 ring, 4 pinky. Tabs and chord charts use these numbers.","Press with your fingertip just behind the fret wire, not on top of it and not in the middle of the gap.","The spider: on the low E string, play frets 1, 2, 3, 4 with fingers 1, 2, 3, 4. Then move to the next string. Go slowly, and make every note ring."],acts:[["Open the fretboard",()=>openScreen("s-neck")]]},
+  {t:"Strum in time",m:6,goal:"Keep a steady down strum on every beat.",tips:["Strum from your elbow and wrist, not your shoulder. Brush across the strings, don't dig in.","Count 1, 2, 3, 4 out loud. One down strum on each number.","In the Rhythm Trainer, aim for mostly green at 60 to 70 BPM. Tap Calibrate first."],acts:[["Rhythm Trainer: quarter notes",()=>openRT("q")]]},
+  {t:"Down and up",m:6,goal:"Add up strums between the beats.",tips:["Down on the numbers, up on the \"ands\": 1 & 2 & 3 & 4 &.","Your arm never stops: down, up, down, up, like a pendulum. That's the secret to good rhythm.","Up strums only need to hit the top three or four strings."],acts:[["Rhythm Trainer: eighth notes",()=>openRT("e")]]},
+  {t:"E and A major",m:8,chords:["E","A"],goal:"Play two bright major chords and switch between them.",tips:["E major is Em with your index finger added on the G string, 1st fret.","A major: three fingers in a row on the 2nd fret of the D, G and B strings. Skip the low E string.","Can't fit three fingers? Angle them slightly, or use fingers 2, 1, 3."],acts:[["Drill E ⇄ A",()=>openTrainer("E","A")],["Practice A",()=>openChord("A")]]},
+  {t:"D major",m:8,chords:["D"],goal:"Play D cleanly with the two low strings silent.",tips:["The triangle: index on G 2nd fret, middle on high E 2nd fret, ring on B 3rd fret.","Strum only the four thinnest strings, starting from the D string.","A, D and E are the three chords behind countless rock and country songs."],acts:[["Drill A ⇄ D",()=>openTrainer("A","D")],["Play Three-Chord Jam",()=>openAlong("threechord")]]},
+  {t:"The Old Faithful strum",m:8,goal:"Learn the strum pattern behind thousands of songs.",tips:["Down, down-up, up-down-up: D - D U - U D U.","The gaps are where your arm still moves but misses the strings. Don't stop the pendulum.","Get it on one chord first, then use it in Campfire Loop."],acts:[["Rhythm Trainer: Old Faithful",()=>openRT("of")],["Play Campfire Loop",()=>openAlong("campfire")]]},
+  {t:"Daily chord changes",m:6,goal:"Build fast, clean changes with one minute a day.",tips:["Pick two chords, set a 60 second timer, and switch as many times as you can. Write down your best.","Do 2 or 3 pairs a day. G ⇄ C, C ⇄ D and Em ⇄ G cover most beginner songs.","Look for anchor fingers that stay put or slide, and move all fingers together as one shape."],acts:[["Drill G ⇄ C",()=>openTrainer("G","C")],["Drill Em ⇄ G",()=>openTrainer("Em","G")]]},
+  {t:"Learn songs with Song Master",m:6,goal:"Use the tools that make any song learnable.",tips:["Start on Level: Easy. Turn on the mic and Auto level, and notes get added as you improve.","Wait mode pauses until you play each note. Speed slows the song without changing the pitch.","Loop section repeats the hard part. Nail it slow, then speed it up."],acts:[["Open Ode to Joy",()=>openSong("ode")]]},
+  {t:"Your first riff",m:8,goal:"Play a single-note riff on the low strings.",tips:["Riffs are short, catchy note patterns, the backbone of rock.","Use one finger per fret: index for fret 2, ring for fret 3, pinky for fret 5.","Pick with short down strokes and let each note ring into the next."],acts:[["Play Riff School",()=>openSong("riff")]]},
+  {t:"Power chords",m:10,chords:["E5","A5","G5"],goal:"Play the two-finger chords that drive rock music.",tips:["Index on the root note on the low E or A string. Ring finger two frets up, on the next string.","Only strum those two or three strings. Let your index finger's underside lightly touch the rest to mute them.","The same shape works anywhere on the neck. Move it, and the chord changes."],acts:[["Drill E5 ⇄ A5",()=>openTrainer("E5","A5")],["Play Power Rock",()=>openAlong("power")]]},
+  {t:"Palm muting",m:8,goal:"Get the chunky, tight rock sound.",tips:["Rest the side of your picking hand lightly on the strings, right where they meet the bridge.","Too far forward and the notes die completely. Too far back and they ring open. Slide until it chugs.","Use all downstrokes: the Rock drive pattern."],acts:[["Rhythm Trainer: Rock drive",()=>openRT("rock")],["Play Power Rock",()=>openAlong("power")]]},
+  {t:"Moving power chords",m:10,chords:["G5","C5","D5"],goal:"Slide one shape around the neck to make new chords.",tips:["Keep your hand locked in the shape and move your whole arm.","Root on the low E string: fret 3 is G, fret 5 is A. Root on the A string: fret 3 is C, fret 5 is D.","Lift slightly as you slide so the strings don't squeak, then press again."],acts:[["Play Punk Drive",()=>openAlong("punk")]]},
+  {t:"Barre chords: F",m:12,chords:["F"],goal:"Play a full F major barre chord.",tips:["Start with Fmaj7 or a mini F (index across B and high E at fret 1) to build strength.","For the full barre, lay your index finger flat across all six strings at fret 1, rolled slightly onto its bony side.","Pull back gently with your arm instead of squeezing hard with your thumb. It takes weeks, so be patient."],acts:[["Practice F",()=>openChord("F")],["Drill C ⇄ F",()=>openTrainer("C","F")]]},
+  {t:"Barre chords: Bm",m:12,chords:["Bm"],goal:"Play B minor, the barre chord that shows up everywhere.",tips:["Index finger barres strings 1 to 5 at fret 2. Skip the low E string.","Middle on the B string 3rd fret, ring and pinky on the D and G strings at fret 4.","G, D, Em and Bm together play hundreds of songs."],acts:[["Practice Bm",()=>openChord("Bm")],["Drill G ⇄ Bm",()=>openTrainer("G","Bm")]]},
+  {t:"Moveable barre shapes",m:10,chords:["F#m","Bm"],goal:"Understand how one shape makes every chord.",tips:["The E-shape barre has its root on the low E string. The A-shape barre has its root on the A string.","Slide the F shape up two frets and it becomes G. Up two more, A. The shape stays, the name changes.","Learn the notes on the low E and A strings (Know the Neck), and you can play any major or minor chord."],acts:[["Open the fretboard",()=>openScreen("s-neck")]]},
+  {t:"Fingerpicking basics",m:8,chords:["C"],goal:"Pick strings with your thumb and fingers.",tips:["Your thumb (p) plays the three bass strings. Index (i) plays G, middle (m) plays B, ring (a) plays high E.","Rest your pinky lightly on the guitar's top for support if it helps.","Pluck by curling your fingers toward your palm, not by pulling up and away."],acts:[["Practice C",()=>openChord("C")]]},
+  {t:"Arpeggio picking",m:10,chords:["C","Am","G"],goal:"Play chords one string at a time.",tips:["Hold the whole chord shape down, then pick its strings one by one.","Thumb on the bass note, then i, m, a, and back down.","Arpeggio Study plays C, Am, G, C. Start on Easy and use Wait mode."],acts:[["Play Arpeggio Study",()=>openSong("arp")]]},
+  {t:"Hammer-ons, pull-offs, slides",m:10,goal:"Connect notes smoothly without picking every one.",tips:["Hammer-on: pick a note, then slam another finger down on a higher fret to sound the next note.","Pull-off: with both fingers down, pick, then flick the higher finger off sideways to sound the lower note.","Slide: pick, then keep pressure on as you slide your finger to the new fret."],acts:[["Play Legato Licks",()=>openSong("legato")]]},
+  {t:"Bends and vibrato",m:10,goal:"Make notes sing like a lead guitarist.",tips:["Bend: push the string toward the ceiling with your ring finger, with the 1st and 2nd fingers behind it helping.","Bend until it sounds like the note two frets higher. Check it by playing that note first.","Vibrato: small, even wiggles of a bend, coming from your wrist."],acts:[["Open the scale",()=>openScale(9,"Minor pentatonic",5)]]},
+  {t:"Improvise over the blues",m:12,goal:"Make up your own lead lines.",tips:["Put on the 12-bar blues, then play notes from the E minor pentatonic scale over it.","Short phrases with space between them sound better than nonstop notes.","Land on E when the chord goes back to E7. It sounds like coming home."],acts:[["Play the blues",()=>openAlong("blues")],["E minor pentatonic",()=>openScale(4,"Minor pentatonic",0)]]},
+  {t:"Keys and their chords",m:8,goal:"See why certain chords sound good together.",tips:["A key is a family of chords. In G: G, Am, Bm, C, D and Em.","The I, IV, V and vi chords (G, C, D, Em in G) make up a huge share of popular music.","Fifties Doo-Wop is G, Em, C, D. That's I, vi, IV, V."],acts:[["Play Fifties Doo-Wop",()=>openAlong("fifties")]]},
+  {t:"Using a capo",m:6,goal:"Play songs in any key with the chords you know.",tips:["A capo clamps across all strings and acts like a new nut.","Capo 2 plus a G shape sounds like A. Same fingers, higher key.","When a tab says Capo 3, put the capo just behind fret 3 and play the shapes as written."]},
+  {t:"Your practice routine",m:5,goal:"Practice in a way that makes you improve fast.",tips:["15 to 20 minutes a day beats two hours once a week.","Warm up with the spider for 2 minutes, do 2 minutes of chord changes, 5 of strumming, then spend the rest on a song you love.","Always start slow, and only speed up once it's clean. Slow and clean is how fast gets built."],acts:[["Rhythm Trainer",()=>openScreen("s-strum")],["Chord Drill",()=>openTrainer("G","C")]]});
+MODULES.length=0;MODULES.push(
+  {t:"Getting Started",l:[12,0,13],art:"strings"},{t:"First Chords",l:[1,2,3,16,17],art:"dots"},{t:"Strumming & Rhythm",l:[14,15,18,19],art:"wave"},
+  {t:"Core Chords",l:[4,5,7],art:"dots"},{t:"Tabs & Songs",l:[6,20,21,11],art:"tab"},{t:"Rock Guitar",l:[22,23,24],art:"wave"},
+  {t:"Barre Chords",l:[25,26,27],art:"dots"},{t:"Fingerpicking",l:[28,29],art:"strings"},{t:"Lead Guitar",l:[8,9,30,31,10,32],art:"neck"},{t:"Music Basics",l:[33,34,35],art:"tab"});
+const ORDER=()=>MODULES.flatMap(M=>M.l);
+function nextLessonIdx(){const o=ORDER().find(i=>!S.done[i]);return o==null?-1:o;}
+/* built-in practice tabs */
+function mkTab(bpm,seq){const rows=[[],[],[],[],[],[]];let beat=0;const CPB=4;seq.forEach(n=>{if(beat>0&&Math.abs(beat%4)<1e-6)rows.forEach(r=>r.push("|"));const notes=Array.isArray(n[0])?n[0]:[[n[0],n[1]]];const len=Array.isArray(n[0])?n[1]:n[2];
+  const cols=Math.round(len*CPB);for(let c=0;c<cols;c++)rows.forEach((r,ri)=>{const hit=c===0&&notes.find(x=>x[0]===ri);r.push(hit?String(hit[1]):"-");if(hit&&hit[1]>9&&c===0)r.push("");});beat+=len;});
+  return "Tempo: "+bpm+"\n"+["e","B","G","D","A","E"].map((l,i)=>l+"|-"+rows[i].join("")+"-|").join("\n");}
+{const E=f=>[5,f,.5],A=f=>[4,f,.5];const bar=[E(0),E(0),E(3),E(0),E(5),E(0),E(3),E(0)];
+ BUILTIN.push({id:"riff",title:"Riff School",builtin:true,text:mkTab(90,[...bar,...bar,A(0),A(0),A(2),A(0),A(3),A(0),A(2),A(0),E(0),E(0),E(3),E(0),E(5),E(3),[5,0,1]])});
+ const ar=fs=>fs.map(([r,f])=>[r,f,.5]);
+ BUILTIN.push({id:"arp",title:"Arpeggio Study",builtin:true,text:mkTab(70,[...ar([[4,3],[3,2],[2,0],[1,1],[0,0],[1,1],[2,0],[3,2]]),...ar([[4,0],[3,2],[2,2],[1,1],[0,0],[1,1],[2,2],[3,2]]),...ar([[5,3],[4,2],[3,0],[2,0],[1,0],[2,0],[3,0],[4,2]]),...ar([[4,3],[3,2],[2,0],[1,1]]),[[[4,3],[3,2],[2,0],[1,1],[0,0]],2]])});
+ const l=(r,f,d)=>[r,f,d||.5];
+ BUILTIN.push({id:"legato",title:"Legato Licks",builtin:true,text:mkTab(76,[l(1,5),l(1,8),l(1,5),l(2,7),l(2,5),l(2,7),[2,5,1],l(3,5),l(3,7),l(3,5),l(4,7),l(4,5),l(4,7),[4,5,1],l(2,5),l(2,7),l(2,9),l(2,7),l(1,5),l(1,8),[1,5,1],l(3,7),l(3,5),l(4,7),l(4,5),[5,5,2]])});}
 const allTabs=()=>BUILTIN.concat(S.tabs);
 const SONGS=[
   {id:"rock",name:"Two-Chord Rock",chords:["Em","Am"],bpc:4,bpm:66},{id:"campfire",name:"Campfire Loop",chords:["G","C","G","D"],bpc:4,bpm:72},
   {id:"pop",name:"Pop Four",chords:["C","G","Am","Fmaj7"],bpc:4,bpm:76},{id:"descent",name:"Minor Descent",chords:["Am","G","Fmaj7","E"],bpc:4,bpm:70},
   {id:"fifties",name:"Fifties Doo-Wop",chords:["G","Em","C","D"],bpc:4,bpm:80},{id:"blues",name:"12-Bar Blues in E",chords:["E7","E7","E7","E7","A7","A7","E7","E7","B7","A7","E7","B7"],bpc:4,bpm:84}];
+SONGS.push({id:"threechord",name:"Three-Chord Jam",chords:["A","D","E","A"],bpc:4,bpm:72},{id:"power",name:"Power Rock",chords:["E5","G5","A5","G5"],bpc:4,bpm:92},{id:"punk",name:"Punk Drive",chords:["G5","C5","D5","C5"],bpc:4,bpm:100});
 const allSongs=()=>SONGS.concat(S.progs);
 const TAB_IC='<svg viewBox="0 0 24 24"><path d="M3 6h18M3 10h18M3 14h18M3 18h18"/></svg>',CH_IC='<svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>';
 function renderSongLists(){const tl=$("tabList");tl.innerHTML="";if(!S.tabs.length)tl.innerHTML='<div class="small muted">No songs yet. Find a tab and it shows up here.</div>';allTabs().forEach(t=>{if(t.builtin)return;if(t.kind==="gp"){const tr=t.gp.tracks[t.ti||0]||t.gp.tracks[0];const b=document.createElement("button");b.className="srow";b.type="button";
@@ -2626,6 +2684,13 @@ function renderChordView(){const vs=T.voicings(CH.p,OPEN);const box=$("chShapes"
   const tips=["Keep your thumb behind the neck, roughly behind your middle finger.","Arch your fingers so each fingertip presses down without touching the next string."];
   const first=v.f.findIndex(f=>f>=0);if(first>0)tips.push("Start your strum from the "+strShort(first)+" string.");if(v.barre)tips.push("Roll your index finger slightly onto its side for the barre, just behind the fret.");
   $("chTips").innerHTML=tips.map(t=>"<div>"+esc(t)+"</div>").join("");}
+/* show me how: fingers land one at a time, each with its instruction and its note */
+let chShowT=[];async function chShowMe(){chShowT.forEach(clearTimeout);chShowT=[];const vs=T.voicings(CH.p,OPEN);const v=vs[CH.vi]||vs[0];if(!v)return;
+  const box=$("chBig");const dots=[...box.querySelectorAll(".fdot")];const lines=[...$("chFingers").children];const fingers=[...new Set(dots.map(d=>+d.dataset.g))].sort((a,b)=>(a||9)-(b||9));
+  dots.forEach(d=>{d.classList.remove("land");d.classList.add("wait");});lines.forEach(l=>l.classList.remove("hl"));const c=ac();let k=0;
+  fingers.forEach(g=>{chShowT.push(setTimeout(()=>{dots.filter(d=>+d.dataset.g===g).forEach(d=>{d.classList.remove("wait");d.classList.add("land");const si=+d.dataset.s;if(Number.isFinite(si)&&v.f[si]>0)pluck(OPEN[si]+v.f[si],ac().currentTime+.02,.3,1.2);});
+      lines.forEach(l=>l.classList.toggle("hl",new RegExp("^"+g+" ·").test(l.textContent)));},400+k*1100));k++;});
+  chShowT.push(setTimeout(()=>{lines.forEach(l=>l.classList.remove("hl"));strumCur();},400+k*1100+300));}
 function strumCur(){const vs=T.voicings(CH.p,OPEN);const v=vs[CH.vi]||vs[0];if(v){const c=ac();strumV(v,c.currentTime+.02,.34,2.4);}}
 $("chBig").addEventListener("click",strumCur);$("chMore").addEventListener("click",strumCur);
 function renderChPicker(){const r=$("chRoots");r.innerHTML="";NOTES.forEach((n,i)=>{const b=document.createElement("button");b.className="chip";b.textContent=n;b.setAttribute("aria-pressed",CH.p&&CH.p.root===i?"true":"false");b.addEventListener("click",()=>showChord(n+(CH.p?CH.p.type:"")));r.appendChild(b);});
@@ -2641,7 +2706,7 @@ function chMic(fr){if(!CH.checking)return;if(fr.off){chCheckStop();return;}const
   else if(++CH.bad>=24){CH.bad=0;const vs=T.voicings(CH.p,OPEN);const d=chordDiagnose(fr.chroma(),CH.p,vs[CH.vi]||vs[0]);if(d)tutorSay(d.text,{visual:d.visual,mood:"warn",key:"chbad",cooldown:7000});}}
 async function chCheck(){if(CH.checking){chCheckStop();return;}if(!(await needMic()))return;CH.checking=true;CH.st=0;Mic.subs.add(chMic);$("chPractice").textContent="Stop listening";$("chPractice").classList.add("on");$("chStatus").textContent="Listening… strum "+CH.p.name+" and hold it.";}
 function chCheckStop(){CH.checking=false;Mic.subs.delete(chMic);$("chPractice").textContent="Practice & Detect";$("chPractice").classList.remove("on");$("chStatus").classList.remove("good");}
-$("chPractice").addEventListener("click",chCheck);
+$("chPractice").addEventListener("click",chCheck);$("chShow").addEventListener("click",chShowMe);
 function openChord(n){showChord(n);openScreen("s-chord");}
 onClose["s-chord"]=()=>chCheckStop();
 
@@ -3374,7 +3439,7 @@ function deckSettle(force){const deck=$("deck");const i=Math.max(0,Math.min(PAGE
   if(P.id==="today")renderToday();if(P.id==="play")renderPlay();if(P.id==="find"){npPoll(true);renderLearn();bgCheckSoon();}if(P.id==="me")renderStats();if(P.id==="tune")pegUI();}
 /* old view names still work: they jump to the matching page */
 function show(v){const id={learn:"today",songs:"find",tools:"tune",profile:"me"}[v]||"today";const i=PAGES.findIndex(p=>p.id===id);curView=v;if($("deck"))deckGo(i,Math.abs(i-DECK.i)>2);}
-function renderToday(){const box=$("todayBox");if(!box)return;const ni=LESSONS.findIndex((_,i)=>!S.done[i]);const done=LESSONS.filter((_,i)=>S.done[i]).length;const pct=Math.round(100*done/LESSONS.length);
+function renderToday(){const box=$("todayBox");if(!box)return;const ni=nextLessonIdx();const done=LESSONS.filter((_,i)=>S.done[i]).length;const pct=Math.round(100*done/LESSONS.length);
   const li=ni>=0?ni:LESSONS.length-1;const L=LESSONS[li];const mi=Math.max(0,MODULES.findIndex(M=>M.l.includes(li)));const M=MODULES[mi];const pos=M.l.indexOf(li)+1;const st=streak();
   const best=Object.values(S.best).reduce((a,b)=>Math.max(a,b),0);const C=2*Math.PI*78;
   box.innerHTML='<div class="row" style="justify-content:space-between"><span class="lbl">'+(ni<0?"Every lesson done":esc(M.t)+" · Lesson "+pos+" of "+M.l.length)+'</span><span class="lbl" style="color:#FF9F0A">'+(st?"🔥 "+st+" day"+(st>1?"s":""):"Start a streak")+'</span></div>'+
