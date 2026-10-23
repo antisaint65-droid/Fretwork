@@ -1,0 +1,29 @@
+name: Record voice samples
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/voices.yml", "tools/voices.mjs"]
+permissions:
+  contents: write
+jobs:
+  voices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Record samples
+        run: |
+          mkdir -p /tmp/v && cp tools/voices.mjs /tmp/v/ && cd /tmp/v
+          npm init -y >/dev/null && npm i kokoro-js@1.2.0 >/dev/null 2>&1
+          node voices.mjs
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          mkdir -p $GITHUB_WORKSPACE/voices
+          for f in voices/*.wav; do ffmpeg -v error -y -i "$f" -ac 1 -b:a 64k "$GITHUB_WORKSPACE/voices/$(basename "${f%.wav}").mp3"; done
+          ls -la $GITHUB_WORKSPACE/voices
+      - name: Save them
+        run: |
+          git config user.name "Fretwork bot"; git config user.email "bot@fretwork.local"
+          git add voices && git commit -m "Voice samples" && git pull --rebase && git push || echo "nothing new"
