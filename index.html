@@ -688,6 +688,25 @@ body.lefty .tzboard{transform:scaleX(-1)}body.lefty .tzboard .sb{scale:-1 1}
 .ltips li::before{content:"";position:absolute;left:2px;top:.55em;width:8px;height:8px;border-radius:50%;background:var(--acc)}
 .lacts{display:grid;gap:8px}.lacts .btn{width:100%}.btn.mark{background:transparent;border:1.5px solid rgba(48,209,88,.6);color:#30D158;display:flex;gap:8px;justify-content:center;align-items:center}
 .btn.mark svg{stroke:#30D158!important}.btn.mark.undo{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
+
+/* module carousel */
+#modules{gap:16px}
+.mcar{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:6px 11%;margin:0 -20px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.mcar::-webkit-scrollbar{display:none}
+.mcar .mod{flex:0 0 78%;scroll-snap-align:center;min-height:250px;align-content:end;transition:transform .12s linear,opacity .12s linear,border-color .2s,box-shadow .2s}
+.mcar .mod .art{width:100%;height:58%;top:0;bottom:auto;right:0;opacity:.8}.mcar .mod .art svg{width:100%;height:100%}
+.mcar .mod .mtop{position:absolute;left:20px;top:18px}.mcar .mod .mnum{font-size:44px}
+.mcar .mod .glow{width:300px;height:300px;right:-60px;top:-80px;opacity:.3}
+.mcar .mod.front{border-color:color-mix(in srgb,var(--acc) 60%,transparent)!important}
+.mdots{display:flex;justify-content:center;gap:6px}.mdots button{width:7px;height:7px;padding:0;border:0;border-radius:9px;background:rgba(255,255,255,.25);transition:width .25s,background .25s}
+.mdots button.on{width:22px;background:#fff}
+.mprev{display:grid;gap:8px;padding:16px;border-radius:26px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.025) 60%);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.mprev>.row b{font:700 19px var(--sans)}
+.prow{display:grid;grid-template-columns:38px 1fr;gap:12px;align-items:center;text-align:left;width:100%;border:0;background:rgba(255,255,255,.05);border-radius:16px;padding:10px 12px;color:#fff}
+.prow i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08);font:700 15px var(--sans);font-style:normal}
+.prow.next i{background:var(--acc);color:#000}.prow.done i{background:#30D158}.prow .t{font:600 15.5px var(--sans)}.prow .m{font-size:12.5px;color:rgba(255,255,255,.55)}
+.mprev .mopen{margin-top:4px}
+#s-journey::before{background:radial-gradient(70% 40% at 30% 18%,color-mix(in srgb,var(--acc,#BF5AF2) 26%,transparent),transparent 70%),radial-gradient(55% 40% at 95% 70%,rgba(10,132,255,.14),transparent 70%),url(paper.jpg) center/cover no-repeat,#000}
 </style>
 </head>
 <body>
@@ -1964,18 +1983,38 @@ function renderModules(){const box=$("modules");box.innerHTML="";const nextLesso
   hero.innerHTML='<svg viewBox="0 0 84 84" class="jring"><circle cx="42" cy="42" r="34" class="bg"/><circle cx="42" cy="42" r="34" class="fg" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-Math.max(.02,pct/100)))+'"/><text x="42" y="48" text-anchor="middle">'+pct+'%</text></svg>'+
     '<div><div class="lbl">Your journey</div><b>'+total+' of '+LESSONS.length+' lessons</b><span>'+MODULES.length+' modules · '+(streak()?"🔥 "+streak()+" day streak":"Start a streak today")+'</span></div>';
   box.appendChild(hero);
+  const car=document.createElement("div");car.className="mcar";const dots=document.createElement("div");dots.className="mdots";const prev=document.createElement("div");prev.className="mprev";
+  box.appendChild(car);box.appendChild(dots);box.appendChild(prev);
   MODULES.forEach((M,mi)=>{const done=M.l.filter(i=>S.done[i]).length;const mp=Math.round(100*done/M.l.length);const active=M.l.includes(nextLesson);const mins=M.l.reduce((a,i)=>a+(LESSONS[i].m||0),0);
     const b=document.createElement("button");b.className="mod"+(active?" active":"")+(mp===100?" complete":"");b.type="button";b.style.setProperty("--acc",MODCOL[mi%MODCOL.length]);
     b.innerHTML='<div class="glow"></div><div class="art">'+ART[M.art]+'</div><div class="mtop"><span class="mnum">'+String(mi+1).padStart(2,"0")+'</span>'+(mp===100?'<span class="check">'+CHECK+'</span>':active?'<span class="upnext">Up next</span>':'')+'</div>'+
       '<h3>'+esc(M.t)+'</h3><div class="st">'+M.l.length+' lessons · '+mins+' min'+(done&&mp<100?' · '+mp+'%':'')+(mp===100?' · Completed':'')+'</div><div class="pb"><i style="width:'+Math.max(mp,active?4:0)+'%"></i></div>';
-    b.addEventListener("click",()=>openModule(mi));box.appendChild(b);});
+    b.addEventListener("click",()=>{if(JC.i!==mi){jcGo(mi);return;}openModule(mi);});car.appendChild(b);
+    const d=document.createElement("button");d.type="button";d.setAttribute("aria-label",M.t);d.addEventListener("click",()=>jcGo(mi));dots.appendChild(d);});
+  const start=Math.max(0,MODULES.findIndex(M=>M.l.includes(nextLesson)));JC.i=-1;
+  let tm=0;car.addEventListener("scroll",()=>{clearTimeout(tm);tm=setTimeout(jcSettle,70);jcTilt();},{passive:true});
+  requestAnimationFrame(()=>{jcGo(JC.want!=null?JC.want:start,true);JC.want=null;});
   $("jBar").style.width=(100*total/LESSONS.length)+"%";$("jCount").textContent=total+" of "+LESSONS.length+" Lessons";$("streakPill").innerHTML="<b>"+streak()+"</b> day streak";}
+/* module carousel: swipe through modules, the lessons of the one in front show below */
+const JC={i:-1,want:null};
+function jcCards(){return [...document.querySelectorAll("#modules .mcar .mod")];}
+function jcGo(i,instant){const car=document.querySelector("#modules .mcar");const c=jcCards()[i];if(!car||!c)return;car.scrollTo({left:c.offsetLeft-(car.clientWidth-c.offsetWidth)/2,behavior:instant?"auto":"smooth"});if(instant)jcSettle();}
+function jcTilt(){const car=document.querySelector("#modules .mcar");if(!car)return;const mid=car.scrollLeft+car.clientWidth/2;
+  jcCards().forEach(c=>{const d=(c.offsetLeft+c.offsetWidth/2-mid)/c.offsetWidth;const a=Math.min(1,Math.abs(d));c.style.transform="scale("+(1-a*.08)+")";c.style.opacity=String(1-a*.45);});}
+function jcSettle(){const car=document.querySelector("#modules .mcar");if(!car)return;const mid=car.scrollLeft+car.clientWidth/2;let best=0,bd=1e9;jcCards().forEach((c,k)=>{const d=Math.abs(c.offsetLeft+c.offsetWidth/2-mid);if(d<bd){bd=d;best=k;}});jcTilt();
+  if(best===JC.i)return;JC.i=best;document.querySelectorAll("#modules .mdots button").forEach((d,k)=>d.classList.toggle("on",k===best));jcCards().forEach((c,k)=>c.classList.toggle("front",k===best));
+  const M=MODULES[best];const acc=MODCOL[best%MODCOL.length];const nx=nextLessonIdx();const pv=document.querySelector("#modules .mprev");pv.style.setProperty("--acc",acc);
+  pv.innerHTML='<div class="row" style="justify-content:space-between;align-items:baseline"><b>'+esc(M.t)+'</b><span class="small muted">Swipe for more</span></div>'+M.l.map(i=>{const L=LESSONS[i];
+    return '<button type="button" class="prow'+(S.done[i]?" done":"")+(i===nx?" next":"")+'" data-i="'+i+'"><i>'+(S.done[i]?CHECK:ORDER().indexOf(i)+1)+'</i><div><div class="t">'+esc(L.t)+'</div><div class="m">'+L.m+' min'+(S.done[i]?" · Done":i===nx?" · Up next":"")+'</div></div></button>';}).join("")+
+    '<button type="button" class="btn w mopen">Open '+esc(M.t)+'</button>';
+  pv.querySelectorAll(".prow").forEach(r=>r.addEventListener("click",()=>{JC.open=+r.dataset.i;openModule(best);}));pv.querySelector(".mopen").addEventListener("click",()=>openModule(best));
+  const sc=$("s-journey");if(sc)sc.style.setProperty("--acc",acc);}
 let curModule=0;
-function openModule(mi){curModule=mi;renderModuleLessons();openScreen("s-module");}
+function openModule(mi){curModule=mi;JC.want=mi;renderModuleLessons();JC.open=null;openScreen("s-module");const o=document.querySelector("#modLessons .lesson[open]");if(o&&o!==document.querySelector("#modLessons .lesson"))setTimeout(()=>o.scrollIntoView({block:"start",behavior:"smooth"}),120);}
 function renderModuleLessons(){const M=MODULES[curModule];const acc=MODCOL[curModule%MODCOL.length];$("modTitle").textContent=M.t;const box=$("modLessons");box.innerHTML="";box.style.setProperty("--acc",acc);$("s-module").style.setProperty("--acc",acc);
   const nextIdx=nextLessonIdx();const done=M.l.filter(i=>S.done[i]).length;
   const hero=document.createElement("div");hero.className="mhero";hero.innerHTML='<div class="glow"></div><div class="art">'+ART[M.art]+'</div><div class="lbl">Module '+(curModule+1)+' of '+MODULES.length+'</div><h2>'+esc(M.t)+'</h2><span>'+done+' of '+M.l.length+' lessons done</span><div class="pb"><i style="width:'+Math.round(100*done/M.l.length)+'%"></i></div>';box.appendChild(hero);
-  M.l.forEach(i=>{const L=LESSONS[i];const d=document.createElement("details");d.className="lesson"+(S.done[i]?" done":"")+(i===nextIdx?" next":"");if(i===nextIdx||M.l.length===1)d.open=true;
+  M.l.forEach(i=>{const L=LESSONS[i];const d=document.createElement("details");d.className="lesson"+(S.done[i]?" done":"")+(i===nextIdx?" next":"");if(JC.open!=null?i===JC.open:(i===nextIdx||M.l.length===1))d.open=true;
     d.innerHTML='<summary><div class="lnum">'+(S.done[i]?CHECK:ORDER().indexOf(i)+1)+'</div><div><div class="ltitle">'+esc(L.t)+'</div><div class="lmeta">'+L.m+' min · '+(S.done[i]?"Done":i===nextIdx?"Up next":"Not started")+'</div></div><svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary>';
     const body=document.createElement("div");body.className="lbody";body.innerHTML='<div class="lgoal"><div class="lbl">Goal</div><div>'+esc(L.goal)+'</div></div><ul class="ltips">'+L.tips.map(t=>"<li>"+esc(t)+"</li>").join("")+"</ul>";
     if(L.chords){const dg=document.createElement("div");dg.className="row lchords";L.chords.forEach(c=>dg.appendChild(chordCard(c,{sm:true})));body.appendChild(dg);}
