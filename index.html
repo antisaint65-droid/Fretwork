@@ -3775,7 +3775,9 @@ async function labFile(f){if(!f)return;const vid=/^video\//.test(f.type||"")||/\
   LAB.img="";if(!$("labTitle").value)$("labTitle").value=niceTitle(f.name).replace(/^\d+\s*[-.]?\s*/,"");labUI();}
 /* the song's tuning and capo, from Gemini's song facts, so the lab writes the tab the way it's really played */
 async function labTuning(title,artist){if(!artist||!title||typeof aiOn!=="function"||!aiOn("facts"))return {};let f=null;try{f=await Promise.race([aiFacts(artist,title),sleep(9000).then(()=>null)]);}catch(e){}
-  return f&&f.tuning?{tuning:String(f.tuning).slice(0,40),capo:Math.max(0,Math.min(12,+f.capo||0))}:{};}
+  /* only send a tuning we're sure is special; otherwise the lab works it out from the notes */
+  if(!f||!f.tuning||/^(e\s*)?standard/i.test(f.tuning)&&!(+f.capo))return {};
+  return {tuning:/^(e\s*)?standard/i.test(f.tuning)?"Standard":String(f.tuning).slice(0,40),capo:Math.max(0,Math.min(12,+f.capo||0))};}
 async function labSend(){if(!LAB.blob||!labOk())return;const title=$("labTitle").value.trim()||"My recording",artist=$("labArtist").value.trim();let id="j"+Date.now().toString(36);
   const btn=$("labSend");btn.disabled=true;btn.textContent="Sending…";const tun=await labTuning(title,artist);
   if(labGuest()){try{const b=await b64of(LAB.blob);const j=await relay("/job?title="+encodeURIComponent(title)+"&artist="+encodeURIComponent(artist)+"&ext="+LAB.ext+(tun.tuning?"&tuning="+encodeURIComponent(tun.tuning)+"&capo="+(tun.capo||0):""),{method:"POST",body:b,headers:{"X-Len":String(b.length),"Content-Type":"text/plain"}});id=j.id;
@@ -3794,7 +3796,8 @@ function labJobsUI(){const box=$("labJobs");if(!box)return;const L=(S.labJobs||[
     row.innerHTML=(j.img?'<img class="npimg" alt="" onerror="this.style.visibility=\'hidden\'" src="'+esc(j.img)+'">':'<div class="ic">'+TAB_IC+'</div>')+'<div><div class="t">'+esc(j.title)+'</div><div class="m">'+esc((j.artist?j.artist+" · ":"")+(LABST[j.st]||j.st)+tn+(j.st==="queued"||j.st==="separating"||j.st==="transcribing"?" · "+mins+" min":"")+(j.err?" · "+j.err:""))+'</div></div>';
     const b=document.createElement("button");b.className="btn small"+(j.st==="ready"?"":" ghost");
     if(j.st==="ready"){b.textContent="Get";b.addEventListener("click",()=>labImport(j,b));}else if(j.st==="done"){b.textContent="Open";b.addEventListener("click",()=>{if(j.tab&&S.tabs.some(t=>t.id===j.tab))openSong(j.tab);});}
-    else if(j.st==="error"){b.textContent="Remove";b.addEventListener("click",()=>{S.labJobs=S.labJobs.filter(x=>x!==j);save();labJobsUI();});}else{b.textContent="Check";b.addEventListener("click",()=>labPoll());}
+    else if(j.st==="error"){b.textContent="Remove";b.addEventListener("click",()=>{S.labJobs=S.labJobs.filter(x=>x!==j);save();labJobsUI();});}else{b.textContent="Check";b.addEventListener("click",async()=>{b.disabled=true;b.textContent="Checking…";const was=j.st;try{await labPoll();}catch(e){}
+      const mins=Math.max(0,Math.round((Date.now()-j.at)/60000));if(j.st===was&&j.st!=="ready")toast((LABST[j.st]||"Working on it")+" "+mins+" min so far. A song usually takes 3 to 5 minutes. It checks by itself every 20 seconds, too.",4500);labJobsUI();});}
     row.appendChild(b);box.appendChild(row);
     if(j.via!=="relay"&&labOwn()&&(j.st==="done"||j.st==="ready")){const c=document.createElement("button");c.className="chip tunchip";c.textContent="Wrong tuning? Change it";c.addEventListener("click",()=>labTunePanel(j,c));box.appendChild(c);}});}
 const LAB_TUNINGS=["Standard","Half step down","Whole step down","Drop D","Drop C#","Drop C","DADGAD","Open G","Open D","Open E","Open C","Double drop D"];
@@ -3821,7 +3824,7 @@ function labPollSoon(){labPoll();if(!LAB.poll)LAB.poll=setInterval(labPoll,20000
 async function labImport(j,btn){btn.disabled=true;btn.textContent="Getting…";
   try{const p="/contents/jobs/"+j.id+"/out/";const get=n=>j.via==="relay"?relay("/file?id="+encodeURIComponent(j.id)+"&name="+n,{raw:true}).catch(()=>null):gh(p+n,{raw:true});
     const [gp5,meta,gtr,bk]=await Promise.all([get("tab.gp5"),get("meta.json"),get("guitar.mp3"),get("backing.mp3")]);if(!gp5||!meta)throw new Error("the tab isn't there yet");
-    const m=JSON.parse(new TextDecoder().decode(meta));if(gtr)await idbPut(j.id+":guitar",new Blob([gtr],{type:"audio/mpeg"}));if(bk)await idbPut(j.id+":backing",new Blob([bk],{type:"audio/mpeg"}));
+    const m=JSON.parse(new TextDecoder().decode(meta));if(m.tuning){j.tuning=m.tuning;j.capo=+m.capo||0;}if(gtr)await idbPut(j.id+":guitar",new Blob([gtr],{type:"audio/mpeg"}));if(bk)await idbPut(j.id+":backing",new Blob([bk],{type:"audio/mpeg"}));
     if(j.tab){const oi=S.tabs.findIndex(t=>t.id===j.tab);if(oi>=0)S.tabs.splice(oi,1);}
     const before=S.tabs.length;await importGp(gp5,j.title+(j.artist?" - "+j.artist:""));const t=S.tabs[S.tabs.length-1];
     if(t&&S.tabs.length>before){t.lab=j.id;t.title=j.title+(j.artist?" · "+j.artist:"");if(Array.isArray(m.syncPts)&&m.syncPts.length)t.syncPts=m.syncPts;t.tiPicked=1;j.tab=t.id;}
